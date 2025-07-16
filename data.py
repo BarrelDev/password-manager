@@ -2,6 +2,7 @@ import os
 import io
 import pandas as pd
 import base64
+import time
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -10,7 +11,12 @@ DATA_FOLDER = ".dat/"
 DATA_FILE = "data"
 SALT_FILE = "salt"
 SESSION_FILE = "session"
+SESSION_DURATION = 300
 FIELD_NAMES = ["service", "usrname", "passwd"]
+
+######################
+## SECURITY METHODS ##
+######################
 
 def write_binary_data(data, filename: str):
     if os.path.isdir(DATA_FOLDER):
@@ -53,6 +59,10 @@ def get_key(password):
     key = base64.urlsafe_b64encode(kdf.derive(password))
 
     return key
+
+#######################
+## DATAFRAME METHODS ##
+#######################
 
 def get_dataframe(password):
     f = Fernet(get_key(password))
@@ -107,3 +117,39 @@ def get_services(password):
     df = get_dataframe(password)
 
     return df["service"].unique().tolist()
+
+#####################
+## SESSION METHODS ##
+#####################
+
+def save_session_key(key: bytes):
+    session_data = {
+        "timestamp": time.time(),
+        "key": base64.urlsafe_b64encode(key).decode()
+    }
+    with open(SESSION_FILE, "w") as f:
+        f.write(f"{session_data['timestamp']}\n{session_data['key']}")
+        
+
+def load_session_key():
+    if not os.path.exists(SESSION_FILE):
+        return None
+
+    try:
+        with open(SESSION_FILE, "r") as f:
+            lines = f.readlines()
+            timestamp = float(lines[0].strip())
+            key = base64.urlsafe_b64decode(lines[1].strip())
+
+        if time.time() - timestamp > SESSION_DURATION:
+            os.remove(SESSION_FILE)
+            return None
+
+        return key
+    except:
+        return None
+
+
+def lock_session():
+    if os.path.exists(SESSION_FILE):
+        os.remove(SESSION_FILE)
