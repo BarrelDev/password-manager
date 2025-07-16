@@ -31,13 +31,13 @@ def read_binary_data(filename: str):
         return b''
 
 def get_salt():
-    if os.path.exists(DATA_FOLDER+"salt"):
-        with open(DATA_FOLDER+"salt", "rb") as file:
+    if os.path.exists(DATA_FOLDER+SALT_FILE):
+        with open(DATA_FOLDER+SALT_FILE, "rb") as file:
             salt = file.read()
             return salt
     else:
         salt = os.urandom(16)
-        write_binary_data(salt, "salt")
+        write_binary_data(salt, SALT_FILE)
         return salt
 
 def get_key(password):
@@ -57,7 +57,7 @@ def get_key(password):
 def get_dataframe(password):
     f = Fernet(get_key(password))
 
-    read_dat = f.decrypt(read_binary_data("data")).decode('utf-8')
+    read_dat = f.decrypt(read_binary_data(DATA_FILE)).decode('utf-8')
     input = io.StringIO(read_dat)
     df_read = pd.read_csv(input)
 
@@ -74,7 +74,7 @@ def write_dataframe(password, df):
 
     # Encrypt and save to file
     token = f.encrypt(csv_data.encode('utf-8'))
-    write_binary_data(token, "data")
+    write_binary_data(token, DATA_FILE)
 
 def add_service(password, service: str, usrname: str, passwd: str):
     df = get_dataframe(password)
