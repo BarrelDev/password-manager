@@ -7,6 +7,9 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 DATA_FOLDER = ".dat/"
+DATA_FILE = "data"
+SALT_FILE = "salt"
+SESSION_FILE = "session"
 FIELD_NAMES = ["service", "usrname", "passwd"]
 
 def write_binary_data(data, filename: str):

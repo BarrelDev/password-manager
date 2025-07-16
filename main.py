@@ -1,4 +1,5 @@
 import data
+import timeout
 import argparse
 import getpass
 from rapidfuzz import process
@@ -31,11 +32,19 @@ def main():
 
     args = parser.parse_args()
 
-    # Securely prompt for password (used as encryption key)
-    password = getpass.getpass("Master password: ").encode("utf-8")
+    # Securely prompt for password (used as encryption key) 
+    try:
+        password = timeout.getpass_timeout("Master password: ", timeout=60).encode("utf-8")
+    except TimeoutError as e:
+        print(f"\n{e}")
+        return
 
     if args.command == "add":
-        user_password = getpass.getpass(f"Password for {args.service}: ")
+        try:
+            user_password = timeout.getpass_timeout(f"Password for {args.service}: ", timeout=60)
+        except TimeoutError as e:
+            print(f"\n{e}")
+            return
         data.add_service(password, args.service, args.username, user_password)
         print(f"✅ Added/Updated credentials for '{args.service}'.")
 
