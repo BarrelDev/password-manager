@@ -1,6 +1,9 @@
 import os
 import io
 import csv
+import base64
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 DATA_FOLDER = ".dat/"
 FIELD_NAMES = ["service", "usrname", "passwd"]
@@ -35,4 +38,18 @@ def get_salt():
         salt = os.urandom(16)
         write_binary_data(salt, "salt")
         return salt
+
+def get_key(password):
+    salt = get_salt()
+
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=salt,
+        iterations=1_200_000,
+    )
+
+    key = base64.urlsafe_b64encode(kdf.derive(password))
+
+    return key
 
