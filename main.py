@@ -1,25 +1,33 @@
 import data
-import csv
 import io
 from cryptography.fernet import Fernet
+import pandas as pd
 
 PASSWORD = b"password"
 FIELD_NAMES = ["service", "usrname", "passwd"]
 
 f = Fernet(data.get_key(PASSWORD))
 
-output = io.StringIO()
-writer = csv.writer(output, quoting=csv.QUOTE_NONNUMERIC)
-writer.writerow(FIELD_NAMES)
-writer.writerow(["google", "name", "password"])
-print(output.getvalue())
-table = output.getvalue()
-token = f.encrypt(table.encode('ascii'))
+df = pd.DataFrame(columns=FIELD_NAMES)
+df = pd.concat([df, pd.DataFrame([["google", "name", "password"]], columns=FIELD_NAMES)], ignore_index=True)
 
+# Save to CSV in-memory using pandas
+output = io.StringIO()
+df.to_csv(output, index=False)
+csv_data = output.getvalue()
+print(csv_data)
+
+# Encrypt and save to file
+token = f.encrypt(csv_data.encode('utf-8'))
 data.write_binary_data(token, "data")
 
-read_dat = f.decrypt(data.read_binary_data("data")).decode('ascii')
-
+# Read and decrypt data from file
+read_dat = f.decrypt(data.read_binary_data("data")).decode('utf-8')
 print(read_dat)
 
+# Load back into DataFrame using pandas
+input = io.StringIO(read_dat)
+df_read = pd.read_csv(input)
 
+# Print the dataframe
+print(df_read)
