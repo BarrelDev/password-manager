@@ -60,12 +60,24 @@ def get_key(password):
 
     return key
 
+def get_fernet(password=None):
+    key = load_session_key()
+    if key:
+        return Fernet(key)
+
+    if password is None:
+        raise ValueError("Password required if no session exists.")
+
+    key = get_key(password)
+    save_session_key(key)
+    return Fernet(key)
+
 #######################
 ## DATAFRAME METHODS ##
 #######################
 
 def get_dataframe(password):
-    f = Fernet(get_key(password))
+    f = get_fernet(password)
 
     read_dat = f.decrypt(read_binary_data(DATA_FILE)).decode('utf-8')
     input = io.StringIO(read_dat)
@@ -74,7 +86,7 @@ def get_dataframe(password):
     return df_read
 
 def write_dataframe(password, df):
-    f = Fernet(get_key(password))
+    f = get_fernet(password)
 
     # Save to CSV in-memory using pandas
     output = io.StringIO()
