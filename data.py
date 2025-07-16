@@ -13,19 +13,17 @@ def write_binary_data(data, filename: str):
     if os.path.isdir(DATA_FOLDER):
         with open(DATA_FOLDER + filename, 'wb+') as file:
             file.write(data)
-            file.close()
     else:
         os.mkdir(DATA_FOLDER)
         with open(DATA_FOLDER + filename, 'wb+') as file:
             file.write(data)
-            file.close()
 
 def read_binary_data(filename: str):
     try:
         with open(DATA_FOLDER + filename, 'rb') as file:
             dat = file.read()
             return dat
-    except:
+    except FileNotFoundError:
         print ('No such file %s exists' % filename)
         return b''
 
@@ -33,7 +31,6 @@ def get_salt():
     if os.path.exists(DATA_FOLDER+"salt"):
         with open(DATA_FOLDER+"salt", "rb") as file:
             salt = file.read()
-            file.close()
             return salt
     else:
         salt = os.urandom(16)
@@ -78,12 +75,22 @@ def write_dataframe(password, df):
 
 def add_service(password, service: str, usrname: str, passwd: str):
     df = get_dataframe(password)
-    
+   
+    #Remove old credentials if service already exists.
+    df = df[df["service"] != service]
+
     row = [service, usrname, passwd]
     df = pd.concat([df, pd.DataFrame([row],
                                      columns=FIELD_NAMES)],
                    ignore_index=True)
     
+    write_dataframe(password, df)
+
+def remove_service(password, service: str):
+    df = get_dataframe(password)
+
+    df = df[df["service"] != service]
+
     write_dataframe(password, df)
 
 def get_credentials(password, service: str):
@@ -92,3 +99,8 @@ def get_credentials(password, service: str):
     if not row.empty:
         return row.iloc[0]["usrname"], row.iloc[0]["passwd"]
     return None, None
+
+def get_services(password):
+    df = get_dataframe(password)
+
+    return df["service"].unique().tolist()
