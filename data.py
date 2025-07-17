@@ -3,6 +3,7 @@ import io
 import pandas as pd
 import base64
 import time
+import tempfile
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -10,7 +11,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 DATA_FOLDER = ".dat/"
 DATA_FILE = "data"
 SALT_FILE = "salt"
-SESSION_FILE = "session"
+SESSION_FILE = tempfile.gettempdir() + "/session"
 SESSION_DURATION = 300
 FIELD_NAMES = ["service", "usrname", "passwd"]
 
@@ -76,7 +77,7 @@ def data_exists():
     return os.path.exists(DATA_FOLDER + DATA_FILE)
 
 def session_exists():
-    return os.path.exists(DATA_FOLDER + SESSION_FILE)
+    return os.path.exists(SESSION_FILE)
 
 #######################
 ## DATAFRAME METHODS ##
@@ -144,22 +145,22 @@ def save_session_key(key: bytes):
         "timestamp": time.time(),
         "key": base64.urlsafe_b64encode(key).decode()
     }
-    with open(DATA_FOLDER + SESSION_FILE, "w") as f:
+    with open(SESSION_FILE, "w") as f:
         f.write(f"{session_data['timestamp']}\n{session_data['key']}")
         
 
 def load_session_key():
-    if not os.path.exists(DATA_FOLDER + SESSION_FILE):
+    if not os.path.exists(SESSION_FILE):
         return None
 
     try:
-        with open(DATA_FOLDER + SESSION_FILE, "r") as f:
+        with open(SESSION_FILE, "r") as f:
             lines = f.readlines()
             timestamp = float(lines[0].strip())
             key = base64.urlsafe_b64decode(lines[1].strip())
 
         if time.time() - timestamp > SESSION_DURATION:
-            os.remove(DATA_FOLDER + SESSION_FILE)
+            os.remove(SESSION_FILE)
             return None
 
         return key
@@ -168,5 +169,5 @@ def load_session_key():
 
 
 def lock_session():
-    if os.path.exists(DATA_FOLDER + SESSION_FILE):
-        os.remove(DATA_FOLDER + SESSION_FILE)
+    if os.path.exists(SESSION_FILE):
+        os.remove(SESSION_FILE)
