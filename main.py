@@ -29,25 +29,32 @@ def main():
     search_parser = subparsers.add_parser("search", help="Search through available services")
     search_parser.add_argument("query", help="What to search for")
     
-    #Lock Command
+    #Lock command
     subparsers.add_parser("lock", help="Manually clear the unlocked session (like sudo -k)")
+
+    # Setup command
+    subparsers.add_parser("setup", help="Initialize the password manager vault") 
 
     args = parser.parse_args()
     
     # Securely prompt for password (used as encryption key) 
-    
-    try:
-        fernet = data.get_fernet()
-    except ValueError:
+
+    # Skip for setup and lock commands
+    requires_unlock = args.command not in {"setup", "lock"}
+
+    if requires_unlock:
         try:
-            password = timeout.getpass_timeout(prompt="Master password: ", timeout=60).encode("utf-8")
-            fernet = data.get_fernet(password)
-        except TimeoutError as e:
-            print(f"\n{e}")
-            return
-        except Exception as e:
-            print(f"\n❌ Unexpected error during password entry: {e}")
-            return
+            fernet = data.get_fernet()
+        except ValueError:
+            try:
+                password = timeout.getpass_timeout(prompt="Master password: ", timeout=60).encode("utf-8")
+                fernet = data.get_fernet(password)
+            except TimeoutError as e:
+                print(f"\n{e}")
+                return
+            except Exception as e:
+                print(f"\n❌ Unexpected error during password entry: {e}")
+                return
 
     if args.command == "add":
         try:
@@ -98,6 +105,35 @@ def main():
     elif args.command == "lock":
         data.lock_session()
         print("🔒 Session locked. Password will be required next time.")
+
+    elif args.command == "setup":
+        if data.session_exists() or data.data_exists():
+            confirm = input("⚠️ Password manager already initialized. Reinitialize? (y/N): ").strip().lower()
+            if confirm != 'y':
+                print("❌ Setup cancelled.")
+                return
+
+        # Prompt for new master password
+        try:
+            while True:
+                pw1 = timeout.getpass_timeout("🧪 Create master password: ", timeout=120)
+                pw2 = timeout.getpass_timeout("🔁 Confirm master password: ", timeout=120)
+                if pw1 != pw2:
+                    print("❗ Passwords do not match. Try again.")
+                elif len(pw1) < 8:
+                    print("❗ Password must be at least 8 characters.")
+                else:
+                    break
+        except TimeoutError as e:
+            print(f"\n{e}")
+            return
+
+        # Initialize encrypted vault and key
+        password = pw1.encode("utf-8")
+        # Ensure fernet is created with the new password
+        fernet = data.get_fernet(password)
+        data.write_dataframe(fernet, data.create_empty_dataframe())
+        print("✅ Vault setup complete. You can now add credentials using `add`.")
 
 if __name__ == "__main__":
     main()

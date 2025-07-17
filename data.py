@@ -72,6 +72,12 @@ def get_fernet(password=None):
     save_session_key(key)
     return Fernet(key)
 
+def data_exists():
+    return os.path.exists(DATA_FOLDER + DATA_FILE)
+
+def session_exists():
+    return os.path.exists(DATA_FOLDER + SESSION_FILE)
+
 #######################
 ## DATAFRAME METHODS ##
 #######################
@@ -88,11 +94,14 @@ def write_dataframe(f, df):
     output = io.StringIO()
     df.to_csv(output, index=False)
     csv_data = output.getvalue()
-    print(csv_data)
 
     # Encrypt and save to file
     token = f.encrypt(csv_data.encode('utf-8'))
     write_binary_data(token, DATA_FILE)
+
+def create_empty_dataframe():
+    # Create an empty DataFrame with the required columns
+    return pd.DataFrame(columns=FIELD_NAMES)
 
 def add_service(fernet, service: str, usrname: str, passwd: str):
     df = get_dataframe(fernet)
