@@ -1,13 +1,14 @@
 import data
 import timeout
 import argparse
+import sys
 from rapidfuzz import process
 
 PASSWORD = b"password"
 
 def main():
     parser = argparse.ArgumentParser(description="🔐 Simple Encrypted Password Manager")
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers = parser.add_subparsers(dest="command")
 
     # Add command
     add_parser = subparsers.add_parser("add", help="Add or update a service credential")
@@ -35,12 +36,24 @@ def main():
     # Setup command
     subparsers.add_parser("setup", help="Initialize the password manager vault") 
 
+    # Help command
+    subparsers.add_parser("help", help="Show this help message")
+
     args = parser.parse_args()
+
+    
+    if args.command == None:
+        parser.print_help()
+        sys.exit(0)
     
     # Securely prompt for password (used as encryption key) 
 
     # Skip for setup and lock commands
     requires_unlock = args.command not in {"setup", "lock"}
+
+    if not data.data_exists() and args.command != "setup":
+        print("❌ No data found. Please run `setup` to initialize the password manager.")
+        return
 
     if requires_unlock:
         try:
@@ -134,6 +147,9 @@ def main():
         fernet = data.get_fernet(password)
         data.write_dataframe(fernet, data.create_empty_dataframe())
         print("✅ Vault setup complete. You can now add credentials using `add`.")
+
+    elif args.command == "help":
+        parser.print_help()
 
 if __name__ == "__main__":
     main()
