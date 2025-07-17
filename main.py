@@ -1,51 +1,19 @@
 import data
 import timeout
-import argparse
-import sys
+import cli
+import tui
 from rapidfuzz import process
 
-PASSWORD = b"password"
-
 def main():
-    parser = argparse.ArgumentParser(description="🔐 Simple Encrypted Password Manager")
-    subparsers = parser.add_subparsers(dest="command")
-
-    # Add command
-    add_parser = subparsers.add_parser("add", help="Add or update a service credential")
-    add_parser.add_argument("service", help="Service name")
-    add_parser.add_argument("username", help="Username for the service")
+    # Parse command line arguments
+    args = cli.parse_args()
     
-    # Remove command
-    remove_parser = subparsers.add_parser("remove", help="Remove a service credential")
-    remove_parser.add_argument("service", help="Service name")
+    # If no command is provided, run the TUI app
+    if args.command is None:
+        tui_app = tui.LoginApp()
+        tui_app.run()
+        return
 
-    # Get command
-    get_parser = subparsers.add_parser("get", help="Retrieve credentials for a service")
-    get_parser.add_argument("service", help="Service name")
-
-    # List command
-    subparsers.add_parser("list", help="List all stored services")
-
-    # Search command
-    search_parser = subparsers.add_parser("search", help="Search through available services")
-    search_parser.add_argument("query", help="What to search for")
-    
-    #Lock command
-    subparsers.add_parser("lock", help="Manually clear the unlocked session (like sudo -k)")
-
-    # Setup command
-    subparsers.add_parser("setup", help="Initialize the password manager vault") 
-
-    # Help command
-    subparsers.add_parser("help", help="Show this help message")
-
-    args = parser.parse_args()
-
-    
-    if args.command == None:
-        parser.print_help()
-        sys.exit(0)
-    
     # Securely prompt for password (used as encryption key) 
 
     # Skip for setup and lock commands
@@ -56,18 +24,7 @@ def main():
         return
 
     if requires_unlock:
-        try:
-            fernet = data.get_fernet()
-        except ValueError:
-            try:
-                password = timeout.getpass_timeout(prompt="Master password: ", timeout=60).encode("utf-8")
-                fernet = data.get_fernet(password)
-            except TimeoutError as e:
-                print(f"\n{e}")
-                return
-            except Exception as e:
-                print(f"\n❌ Unexpected error during password entry: {e}")
-                return
+        fernet = data.prompt_for_password(timeout=60)
 
     if args.command == "add":
         try:

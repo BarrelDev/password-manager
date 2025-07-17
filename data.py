@@ -4,7 +4,8 @@ import pandas as pd
 import base64
 import time
 import tempfile
-from cryptography.fernet import Fernet
+from timeout import getpass_timeout
+from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
@@ -63,15 +64,43 @@ def get_key(password):
 
 def get_fernet(password=None):
     key = load_session_key()
+    
     if key:
+        # print ("loaded dem jawns")
         return Fernet(key)
 
     if password is None:
         raise ValueError("Password required if no session exists.")
-
+    print("Creating new Fernet instance with provided password.")
     key = get_key(password)
-    save_session_key(key)
     return Fernet(key)
+
+def prompt_for_password(prompt="Master password: ", timeout=60):
+    encrypted = read_binary_data(DATA_FILE)
+
+    while True:
+        try:
+            fernet = get_fernet()
+            # print("Session key loaded successfully.")
+            return fernet
+        except ValueError:
+            # print("Session key not found or invalid. Please enter the master password.")
+            try:
+                password = getpass_timeout(prompt, timeout=timeout).encode("utf-8")
+                # print("Attempting to create Fernet instance with provided password.")
+                fernet = get_fernet(password)
+                try:
+                    fernet.decrypt(encrypted)  # Test if key is valid
+                    print("✅ Password accepted.")
+                    save_session_key(get_key(password))
+                    return fernet
+                except InvalidToken:
+                    print("❌ Invalid password. Please try again.")
+            except TimeoutError as e:
+                print(f"\n{e}")
+            except Exception as e:
+                print(f"\n❌ Unexpected error during password entry: {e}")
+
 
 def data_exists():
     return os.path.exists(DATA_FOLDER + DATA_FILE)
@@ -84,11 +113,18 @@ def session_exists():
 #######################
 
 def get_dataframe(f):
-    read_dat = f.decrypt(read_binary_data(DATA_FILE)).decode('utf-8')
-    input = io.StringIO(read_dat)
-    df_read = pd.read_csv(input)
+    try:
+        read_dat = f.decrypt(read_binary_data(DATA_FILE)).decode('utf-8')
+        input = io.StringIO(read_dat)
+        df_read = pd.read_csv(input)
+        return df_read
+    except InvalidToken:
+        print("Incorrect password")
+        pass
 
-    return df_read
+    return None
+        
+    
 
 def write_dataframe(f, df):
     # Save to CSV in-memory using pandas

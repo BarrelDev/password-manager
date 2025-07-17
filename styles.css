@@ -1,0 +1,19 @@
+#title {
+  text-align: center;
+  margin: 1 0;
+}
+
+#username, #password {
+  width: 50%;
+  margin: 1;
+}
+
+#login_button {
+  width: 20%;
+  margin: 1;
+}
+
+#msg {
+  text-align: center;
+  margin-top: 1;
+}
