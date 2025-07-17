@@ -135,22 +135,22 @@ def save_session_key(key: bytes):
         "timestamp": time.time(),
         "key": base64.urlsafe_b64encode(key).decode()
     }
-    with open(SESSION_FILE, "w") as f:
+    with open(DATA_FOLDER + SESSION_FILE, "w") as f:
         f.write(f"{session_data['timestamp']}\n{session_data['key']}")
         
 
 def load_session_key():
-    if not os.path.exists(SESSION_FILE):
+    if not os.path.exists(DATA_FOLDER + SESSION_FILE):
         return None
 
     try:
-        with open(SESSION_FILE, "r") as f:
+        with open(DATA_FOLDER + SESSION_FILE, "r") as f:
             lines = f.readlines()
             timestamp = float(lines[0].strip())
             key = base64.urlsafe_b64decode(lines[1].strip())
 
         if time.time() - timestamp > SESSION_DURATION:
-            os.remove(SESSION_FILE)
+            os.remove(DATA_FOLDER + SESSION_FILE)
             return None
 
         return key
@@ -159,5 +159,5 @@ def load_session_key():
 
 
 def lock_session():
-    if os.path.exists(SESSION_FILE):
-        os.remove(SESSION_FILE)
+    if os.path.exists(DATA_FOLDER + SESSION_FILE):
+        os.remove(DATA_FOLDER + SESSION_FILE)

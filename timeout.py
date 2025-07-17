@@ -3,8 +3,7 @@ import getpass
 
 def getpass_timeout(prompt="Password: ", timeout=60):
     try:
-        print(prompt, end='', flush=True)
-        return getpass.getpass()
+        return getpass.getpass(prompt)
     except Exception:
         # Fallback to manual timeout using inputimeout for cross-platform support
         try:

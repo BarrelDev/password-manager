@@ -1,7 +1,6 @@
 import data
 import timeout
 import argparse
-import getpass
 from rapidfuzz import process
 
 PASSWORD = b"password"
@@ -52,7 +51,7 @@ def main():
 
     if args.command == "add":
         try:
-            user_password = timeout.getpass_timeout(f"Password for {args.service}: ", timeout=60)
+            user_password = timeout.getpass_timeout(prompt=f"Password for {args.service}: ", timeout=60)
         except TimeoutError as e:
             print(f"\n{e}")
             return
