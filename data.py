@@ -76,18 +76,14 @@ def get_fernet(password=None):
 ## DATAFRAME METHODS ##
 #######################
 
-def get_dataframe(password):
-    f = get_fernet(password)
-
+def get_dataframe(f):
     read_dat = f.decrypt(read_binary_data(DATA_FILE)).decode('utf-8')
     input = io.StringIO(read_dat)
     df_read = pd.read_csv(input)
 
     return df_read
 
-def write_dataframe(password, df):
-    f = get_fernet(password)
-
+def write_dataframe(f, df):
     # Save to CSV in-memory using pandas
     output = io.StringIO()
     df.to_csv(output, index=False)
@@ -98,8 +94,8 @@ def write_dataframe(password, df):
     token = f.encrypt(csv_data.encode('utf-8'))
     write_binary_data(token, DATA_FILE)
 
-def add_service(password, service: str, usrname: str, passwd: str):
-    df = get_dataframe(password)
+def add_service(fernet, service: str, usrname: str, passwd: str):
+    df = get_dataframe(fernet)
    
     #Remove old credentials if service already exists.
     df = df[df["service"] != service]
@@ -109,24 +105,24 @@ def add_service(password, service: str, usrname: str, passwd: str):
                                      columns=FIELD_NAMES)],
                    ignore_index=True)
     
-    write_dataframe(password, df)
+    write_dataframe(fernet, df)
 
-def remove_service(password, service: str):
-    df = get_dataframe(password)
+def remove_service(fernet, service: str):
+    df = get_dataframe(fernet)
 
     df = df[df["service"] != service]
 
-    write_dataframe(password, df)
+    write_dataframe(fernet, df)
 
-def get_credentials(password, service: str):
-    df = get_dataframe(password)
+def get_credentials(fernet, service: str):
+    df = get_dataframe(fernet)
     row = df.loc[df["service"] == service]
     if not row.empty:
         return row.iloc[0]["usrname"], row.iloc[0]["passwd"]
     return None, None
 
-def get_services(password):
-    df = get_dataframe(password)
+def get_services(fernet):
+    df = get_dataframe(fernet)
 
     return df["service"].unique().tolist()
 

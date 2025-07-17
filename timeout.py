@@ -4,10 +4,13 @@ import getpass
 def getpass_timeout(prompt="Password: ", timeout=60):
     try:
         print(prompt, end='', flush=True)
-        return getpass.getpass(timeout=timeout)
+        return getpass.getpass()
     except Exception:
         # Fallback to manual timeout using inputimeout for cross-platform support
         try:
             return inputimeout(prompt="", timeout=timeout)
         except TimeoutOccurred:
             raise TimeoutError("⏱️ Timeout: No input received in time.")
+        except PermissionError:
+                print("⚠️ Warning: Terminal does not support secure timed input. Using insecure fallback.")
+                return input(prompt)

@@ -29,15 +29,26 @@ def main():
     # Search command
     search_parser = subparsers.add_parser("search", help="Search through available services")
     search_parser.add_argument("query", help="What to search for")
+    
+    #Lock Command
+    subparsers.add_parser("lock", help="Manually clear the unlocked session (like sudo -k)")
 
     args = parser.parse_args()
-
+    
     # Securely prompt for password (used as encryption key) 
+    
     try:
-        password = timeout.getpass_timeout("Master password: ", timeout=60).encode("utf-8")
-    except TimeoutError as e:
-        print(f"\n{e}")
-        return
+        fernet = data.get_fernet()
+    except ValueError:
+        try:
+            password = timeout.getpass_timeout(prompt="Master password: ", timeout=60).encode("utf-8")
+            fernet = data.get_fernet(password)
+        except TimeoutError as e:
+            print(f"\n{e}")
+            return
+        except Exception as e:
+            print(f"\n❌ Unexpected error during password entry: {e}")
+            return
 
     if args.command == "add":
         try:
@@ -45,15 +56,15 @@ def main():
         except TimeoutError as e:
             print(f"\n{e}")
             return
-        data.add_service(password, args.service, args.username, user_password)
+        data.add_service(fernet, args.service, args.username, user_password)
         print(f"✅ Added/Updated credentials for '{args.service}'.")
 
     elif args.command == "remove":
-        data.remove_service(password, args.service)
+        data.remove_service(fernet, args.service)
         print(f"✅ Removed credentials for '{args.service}'.")
 
     elif args.command == "get":
-        username, passwd = data.get_credentials(password, args.service)
+        username, passwd = data.get_credentials(fernet, args.service)
         if username is not None:
             print(f"🔑 Service: {args.service}")
             print(f"👤 Username: {username}")
@@ -62,7 +73,7 @@ def main():
             print(f"❌ No credentials found for '{args.service}'.")
 
     elif args.command == "list":
-        services = data.get_services(password)
+        services = data.get_services(fernet)
         if services:
             print("📋 Stored services:")
             for service in services:
@@ -71,7 +82,7 @@ def main():
             print("⚠️ No services stored yet.")
 
     elif args.command == "search":
-        services = data.get_services(password)
+        services = data.get_services(fernet)
         if not services:
             print("⚠️ No services stored yet.")
             return
@@ -84,6 +95,10 @@ def main():
                 print(f" - {match} ({score:.0f}%)")
         else:
             print("❌ No close matches found.")
+    
+    elif args.command == "lock":
+        data.lock_session()
+        print("🔒 Session locked. Password will be required next time.")
 
 if __name__ == "__main__":
     main()
