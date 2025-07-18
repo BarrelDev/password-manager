@@ -3,7 +3,7 @@ from textual.widgets import Button, Label, DataTable, Static, Input
 from textual.containers import Vertical, Horizontal
 from rapidfuzz import process
 
-from data import lock_session, get_dataframe, write_dataframe, add_service, get_services, remove_service
+from data import lock_session, get_dataframe, add_service, get_services, remove_service
 
 class MainMenu(Screen):
     def compose(self):
@@ -102,9 +102,13 @@ class AddEntry(Screen):
 
         # Populate the table
         self.table = DataTable(id="entry-table")
-        self.table.add_columns("Service", "Username", "Password")
+        self.table.cursor_type = "row"
+        _, _, self.password_key = self.table.add_columns("Service", "Username", "Password")
+        masked = "••••••"
+        self.real_passwords = {}  # Store real passwords for later use
         for _, row in self.df.iterrows():
-            self.table.add_row(row["service"], row["usrname"], row["passwd"])
+            key = self.table.add_row(row["service"], row["usrname"], masked)
+            self.real_passwords[key] = row["passwd"]
 
         # Control buttons
         button_row = Horizontal(
@@ -121,6 +125,17 @@ class AddEntry(Screen):
             Static("", id="message"),
             id="main-layout"
         )
+    
+    def on_data_table_row_highlighted(self, event) -> None:
+        # Mask all passwords
+        for row_key in self.real_passwords:
+            self.table.update_cell(row_key, self.password_key, "••••••")
+
+        # Reveal the highlighted password
+        highlighted_key = event.row_key
+        real_password = self.real_passwords.get(highlighted_key)
+        if real_password is not None:
+            self.table.update_cell(highlighted_key, self.password_key, real_password)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         match event.button.id:

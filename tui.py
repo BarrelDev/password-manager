@@ -1,5 +1,5 @@
 from screens.mainmenu import MainMenu
-from data import data_exists, get_fernet, get_key, add_service, remove_service, get_credentials, is_valid, save_session_key
+from data import data_exists, get_fernet, get_key, is_valid, save_session_key, write_dataframe, create_empty_dataframe
 
 from textual.app import App, ComposeResult
 from textual.widgets import Input, Label, Button, Static
@@ -10,11 +10,20 @@ class LoginApp(App):
     CSS_PATH = "styles.css"
 
     password = reactive("")
+    confirm_password = reactive("")
     message = reactive("")
     session_exists = reactive(False)
 
     def compose(self) -> ComposeResult:
-        if not self.session_exists:
+        if not data_exists():
+            yield Vertical(
+                Label("🔐 Welcome to Password Manager!", id="title"),
+                Static("Please create a master password.", id="msg"),
+                Input(password=True, placeholder="Password", id="password"),
+                Input(password=True, placeholder="Confirm Password", id="confirm_password"),
+                Button("Create", id="create_button")
+            )
+        elif not self.session_exists:
             yield Vertical(
                 Label("🔐 Welcome to Password Manager", id="title"),
                 Input(password=True, placeholder="Password", id="password"),
@@ -38,14 +47,18 @@ class LoginApp(App):
     def on_input_changed(self, event: Input.Changed) -> None:
         if event.input.id == "password":
             self.password = event.value
+        if event.input.id == "confirm_password":
+            self.confirm_password = event.value
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
-        if event.input.id == "password":
+        if event.input.id == "password" and data_exists():
             self.submit_password()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "login_button":
             self.submit_password()
+        if event.button.id == "create_button":
+            self.setup_password()
 
     def submit_password(self):
         if self.password:
@@ -64,6 +77,25 @@ class LoginApp(App):
             self.message = "❌ Please enter a password."
         self.query_one("#msg", Static).update(self.message)
         self.query_one("#password", Input).value = ""
+
+    def setup_password(self):
+        if self.password and self.confirm_password:
+            if self.password == self.confirm_password:
+                if len(self.password) < 8:
+                    self.message = "❗ Password must be at least 8 characters."
+                else:
+                    password = self.password.encode('utf-8')
+                    save_session_key(get_key(password))
+                    self.fernet = get_fernet(password)
+                    write_dataframe(self.fernet, create_empty_dataframe())  # Initialize empty DataFrame
+                    self.session_exists = True
+                    self.push_screen(MainMenu())
+            else:
+                self.message = "❗ Passwords do not match."
+        else:
+            self.message = "❌ Please enter both password fields."
+        self.query_one("#msg", Static).update(self.message)
+
 
 if __name__ == "__main__":
     app = LoginApp()
