@@ -1,6 +1,6 @@
 #title {
   text-align: center;
-  margin: 1 3;
+  margin: 0 3;
 }
 
 #username, #password {
@@ -32,7 +32,42 @@
 
 #header {
     height: auto;
-    padding: 1;
+    padding: 0 1;
     layout: horizontal;
     align: center middle;
+}
+
+#main-layout {
+    height: 100%;
+    layout: vertical;
+    padding: 1;
+}
+
+#input-fields, #buttons {
+    layout: horizontal;
+    height: auto;
+    padding-bottom: 1;
+}
+
+#service-input,
+#username-input,
+#password-input {
+    width: 15%; /* Adjust this as needed */
+}
+
+#entry-table {
+    height: 1fr; /* fills remaining space */
+    border: solid $accent;
+}
+
+#title {
+    text-align: center;
+    height: auto;
+    padding: 1 1;
+}
+
+#message {
+    height: auto;
+    color: $success;
+    padding: 0 1;
 }
