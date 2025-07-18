@@ -9,7 +9,7 @@ class MainMenu(Screen):
         yield Vertical(
             Label("📂 Main Menu", id="title"),
             Button("📋 View All Entries", id="view"),
-            Button("➕ Add Entry", id="add"),
+            Button("➕ Add/❌ Remove Entry", id="add"),
             Button("🔍 Search", id="search"),
             Button("🔒 Lock", id="lock"),
         )
@@ -27,6 +27,10 @@ class MainMenu(Screen):
 
 
 class EntryList(Screen):
+    def on_key(self, event):
+        if event.key == "escape":
+            self.app.pop_screen()
+
     def compose(self):
         df = get_dataframe(self.app.fernet)
 
@@ -38,14 +42,18 @@ class EntryList(Screen):
 
         # This would be populated with actual entries
         if not df.empty:
-            table = DataTable(id="table")
-            table.add_columns("Service", "Username", "Password")
+            self.table = DataTable(id="table")
+            self.table.cursor_type = "row"
+            _, _, self.password_key = self.table.add_columns("Service", "Username", "Password")
+            masked = "••••••"
+            self.real_passwords = {}  # Store real passwords for later use
             for _, row in df.iterrows():
-                table.add_row(row["service"], row["usrname"], row["passwd"])
-            table.focus()
+                key = self.table.add_row(row["service"], row["usrname"], masked)
+                self.real_passwords[key] = row["passwd"]
+            self.table.focus()
             yield Vertical(
                 header,
-                table,
+                self.table,
                 id="list-container"
             )
         else:
@@ -54,6 +62,17 @@ class EntryList(Screen):
                 Label("No entries available yet.", id="entries"),
                 id="list-container"
             )
+
+    def on_data_table_row_highlighted(self, event) -> None:
+        # Mask all passwords
+        for row_key in self.real_passwords:
+            self.table.update_cell(row_key, self.password_key, "••••••")
+
+        # Reveal the highlighted password
+        highlighted_key = event.row_key
+        real_password = self.real_passwords.get(highlighted_key)
+        if real_password is not None:
+            self.table.update_cell(highlighted_key, self.password_key, real_password)
 
     def on_button_pressed(self, event):
         if event.button.id == "back":
@@ -64,7 +83,9 @@ class EntryList(Screen):
         pass  # Implement loading logic here
 
 class AddEntry(Screen):
-    BINDINGS = [("escape", "app.pop_screen", "Back")]
+    def on_key(self, event):
+        if event.key == "escape":
+            self.app.pop_screen()
     
     def compose(self):
         self.df = get_dataframe(self.app.fernet)
@@ -135,6 +156,10 @@ class AddEntry(Screen):
                 self.app.pop_screen()
 
 class Search(Screen):
+    def on_key(self, event):
+        if event.key == "escape":
+            self.app.pop_screen()
+
     def compose(self):
         yield Label("🔍 Search Entries", id="title")
         yield Button("Back to Main Menu", id="back")
