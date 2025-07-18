@@ -60,8 +60,14 @@
     margin-right: 1;
 }
 
+#search-controls {
+    layout: horizontal;
+    align: center middle;
+    padding: 1;
+}
+
 #search-results {
-    height: 1fr; /* fills remaining space */
+    height: 2fr; /* fills remaining space */
     border: solid $accent;
 }
 

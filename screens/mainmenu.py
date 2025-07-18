@@ -150,7 +150,9 @@ class AddEntry(Screen):
                 # Add to DataFrame and table
                 add_service(self.app.fernet, service, username, password)
                 self.df = get_dataframe(self.app.fernet)  # Reload DataFrame
-                self.table.add_row(service, username, password)
+                key = self.table.add_row(service, username, "••••••")
+                self.real_passwords[key] = password  # Store real password
+
 
                 # Clear inputs and notify
                 for field_id in ["#service-input", "#username-input", "#password-input"]:
@@ -163,6 +165,7 @@ class AddEntry(Screen):
                     self.df = self.df.drop(self.df.index[index]).reset_index(drop=True)
                     remove_service(self.app.fernet, self.table.get_row_at(index)[0])
                     row_key, _ = self.table.coordinate_to_cell_key(self.table.cursor_coordinate)
+                    self.real_passwords.pop(row_key, None)  # Remove from real passwords
                     self.table.remove_row(row_key)
                     self.query_one("#message", Static).update("🗑️ Entry removed.")
                 else:
@@ -188,7 +191,8 @@ class Search(Screen):
                 id="header"),
             Horizontal(
                 Input(placeholder="Search by service name", id="search-input").focus(),
-                Button("Search", id="search")
+                Button("Search", id="search"),
+                id="search-controls"
             ),
             self.table,
             id="main-layout"
