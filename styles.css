@@ -55,6 +55,16 @@
     width: 15%; /* Adjust this as needed */
 }
 
+#search-input {
+    width: 40%;
+    margin-right: 1;
+}
+
+#search-results {
+    height: 1fr; /* fills remaining space */
+    border: solid $accent;
+}
+
 #entry-table {
     height: 1fr; /* fills remaining space */
     border: solid $accent;

@@ -1,6 +1,7 @@
 from textual.screen import Screen
 from textual.widgets import Button, Label, DataTable, Static, Input
 from textual.containers import Vertical, Horizontal
+from rapidfuzz import process
 
 from data import lock_session, get_dataframe, write_dataframe, add_service, get_services, remove_service
 
@@ -161,14 +162,46 @@ class Search(Screen):
             self.app.pop_screen()
 
     def compose(self):
-        yield Label("🔍 Search Entries", id="title")
-        yield Button("Back to Main Menu", id="back")
-        # Add input field for search term
-        yield Button("Search", id="search")
+        self.table = DataTable(id="search-results")
+        self.table.add_columns("Service", "Score")
+        self.table.cursor_type = "row"
+
+        yield Vertical(
+            Horizontal(
+                Label("🔍 Search Entries", id="title"),
+                Button("Back to Main Menu", id="back"),
+                id="header"),
+            Horizontal(
+                Input(placeholder="Search by service name", id="search-input").focus(),
+                Button("Search", id="search")
+            ),
+            self.table,
+            id="main-layout"
+        )
 
     def on_button_pressed(self, event):
         if event.button.id == "back":
             self.app.pop_screen()  # go back to main menu
         if event.button.id == "search":
-            # Logic to perform search and display results
-            self.app.pop_screen()  # go back to main menu
+            self.submit_search()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.input.id == "search-input":
+            self.submit_search()
+
+    def submit_search(self):
+        # Logic to perform search and display results
+        query = self.query_one("#search-input", Input).value.strip()
+        if not query:
+            self.query_one("#search-results", DataTable).clear()
+            return
+
+        # Perform search
+        services = get_services(self.app.fernet)
+        results = process.extract(query, services, limit=5, score_cutoff=60)
+        results.sort(key=lambda x: x[1], reverse=True)
+
+        # Update the search results table
+        self.query_one("#search-results", DataTable).clear()
+        for service, score, _ in results:
+            self.query_one("#search-results", DataTable).add_row(service, score)
