@@ -63,6 +63,7 @@ class LoginApp(App):
         else:
             self.message = "❌ Please enter a password."
         self.query_one("#msg", Static).update(self.message)
+        self.query_one("#password", Input).value = ""
 
 if __name__ == "__main__":
     app = LoginApp()
