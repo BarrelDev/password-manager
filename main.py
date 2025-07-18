@@ -106,7 +106,7 @@ def main():
         print("✅ Vault setup complete. You can now add credentials using `add`.")
 
     elif args.command == "help":
-        parser.print_help()
+        cli.print_help()
 
 if __name__ == "__main__":
     main()

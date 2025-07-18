@@ -1,8 +1,9 @@
 import argparse
 import sys
 
+parser = argparse.ArgumentParser(description="🔐 Simple Encrypted Password Manager")
+
 def parse_args():
-    parser = argparse.ArgumentParser(description="🔐 Simple Encrypted Password Manager")
     subparsers = parser.add_subparsers(dest="command")
 
     # Add command
@@ -35,3 +36,6 @@ def parse_args():
     subparsers.add_parser("help", help="Show this help message")
 
     return parser.parse_args()
+
+def print_help():
+    parser.print_help()
