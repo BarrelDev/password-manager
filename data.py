@@ -71,9 +71,19 @@ def get_fernet(password=None):
 
     if password is None:
         raise ValueError("Password required if no session exists.")
-    print("Creating new Fernet instance with provided password.")
+    # print("Creating new Fernet instance with provided password.")
     key = get_key(password)
     return Fernet(key)
+
+def is_valid(fernet):
+    encrypted = read_binary_data(DATA_FILE)
+    try:
+        fernet.decrypt(encrypted)  # Test if key is valid
+        return True
+    except InvalidToken:
+        return False
+    return False
+
 
 def prompt_for_password(prompt="Master password: ", timeout=60):
     encrypted = read_binary_data(DATA_FILE)
@@ -89,12 +99,10 @@ def prompt_for_password(prompt="Master password: ", timeout=60):
                 password = getpass_timeout(prompt, timeout=timeout).encode("utf-8")
                 # print("Attempting to create Fernet instance with provided password.")
                 fernet = get_fernet(password)
-                try:
-                    fernet.decrypt(encrypted)  # Test if key is valid
-                    print("✅ Password accepted.")
+                if is_valid(fernet):
                     save_session_key(get_key(password))
                     return fernet
-                except InvalidToken:
+                else:
                     print("❌ Invalid password. Please try again.")
             except TimeoutError as e:
                 print(f"\n{e}")

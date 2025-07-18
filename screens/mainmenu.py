@@ -2,6 +2,8 @@ from textual.screen import Screen
 from textual.widgets import Button, Label
 from textual.containers import Vertical
 
+from data import lock_session
+
 class MainMenu(Screen):
     def compose(self):
         yield Vertical(
@@ -14,8 +16,55 @@ class MainMenu(Screen):
 
     def on_button_pressed(self, event):
         if event.button.id == "view":
-            self.app.push_screen("entry_list")
+            self.app.push_screen(EntryList())
         elif event.button.id == "add":
-            self.app.push_screen("add_entry")
+            self.app.push_screen(AddEntry())
+        elif event.button.id == "search":
+            self.app.push_screen(Search())
         elif event.button.id == "lock":
+            lock_session()
             self.app.pop_screen()  # go back to login
+
+
+class EntryList(Screen):
+    def compose(self):
+        # This would be populated with actual entries
+        yield Label("🔍 Entry List", id="title")
+        yield Button("Back to Main Menu", id="back")
+        yield Label("No entries available yet.", id="entries")
+
+    def on_button_pressed(self, event):
+        if event.button.id == "back":
+            self.app.pop_screen()  # go back to main menu
+
+    def on_mount(self):
+        # Load entries from data source and display them
+        pass  # Implement loading logic here
+
+class AddEntry(Screen):
+    def compose(self):
+        yield Label("➕ Add New Entry", id="title")
+        yield Button("Back to Main Menu", id="back")
+        # Add input fields for service, username, and password
+        yield Button("Save", id="save")
+
+    def on_button_pressed(self, event):
+        if event.button.id == "back":
+            self.app.pop_screen()  # go back to main menu
+        if event.button.id == "save":
+            # Logic to save the new entry
+            self.app.pop_screen()  # go back to main menu
+
+class Search(Screen):
+    def compose(self):
+        yield Label("🔍 Search Entries", id="title")
+        yield Button("Back to Main Menu", id="back")
+        # Add input field for search term
+        yield Button("Search", id="search")
+
+    def on_button_pressed(self, event):
+        if event.button.id == "back":
+            self.app.pop_screen()  # go back to main menu
+        if event.button.id == "search":
+            # Logic to perform search and display results
+            self.app.pop_screen()  # go back to main menu
