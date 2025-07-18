@@ -1,6 +1,6 @@
 #title {
   text-align: center;
-  margin: 1 0;
+  margin: 1 3;
 }
 
 #username, #password {
@@ -16,4 +16,23 @@
 #msg {
   text-align: center;
   margin-top: 1;
+}
+
+#entry-list-container {
+    height: 100%;
+    padding: 1;
+    layout: vertical;
+}
+
+#table {
+    height: 1fr;
+    border: solid $accent;
+    padding: 1;
+}
+
+#header {
+    height: auto;
+    padding: 1;
+    layout: horizontal;
+    align: center middle;
 }

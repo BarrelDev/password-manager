@@ -1,8 +1,8 @@
 from textual.screen import Screen
-from textual.widgets import Button, Label
-from textual.containers import Vertical
+from textual.widgets import Button, Label, DataTable
+from textual.containers import Vertical, Horizontal
 
-from data import lock_session
+from data import lock_session, get_dataframe
 
 class MainMenu(Screen):
     def compose(self):
@@ -28,10 +28,32 @@ class MainMenu(Screen):
 
 class EntryList(Screen):
     def compose(self):
+        df = get_dataframe(self.app.fernet)
+
+        header = Horizontal(
+            Label("🔍 Entry List", id="title"),
+            Button("Back to Main Menu", id="back"),
+            id="header"
+        )
+
         # This would be populated with actual entries
-        yield Label("🔍 Entry List", id="title")
-        yield Button("Back to Main Menu", id="back")
-        yield Label("No entries available yet.", id="entries")
+        if not df.empty:
+            table = DataTable(id="table")
+            table.add_columns("Service", "Username", "Password")
+            for _, row in df.iterrows():
+                table.add_row(row["service"], row["usrname"], row["passwd"])
+            table.focus()
+            yield Vertical(
+                header,
+                table,
+                id="list-container"
+            )
+        else:
+            yield Vertical(
+                header,
+                Label("No entries available yet.", id="entries"),
+                id="list-container"
+            )
 
     def on_button_pressed(self, event):
         if event.button.id == "back":
