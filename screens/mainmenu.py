@@ -3,7 +3,7 @@ from textual.widgets import Button, Label, DataTable, Static, Input
 from textual.containers import Vertical, Horizontal
 from rapidfuzz import process
 
-from data import lock_session, get_dataframe, add_service, get_services, remove_service
+from data import lock_session, get_dataframe, add_service, get_services, remove_service, get_credentials
 
 class MainMenu(Screen):
     def compose(self):
@@ -180,8 +180,9 @@ class Search(Screen):
             self.app.pop_screen()
 
     def compose(self):
+        self.real_passwords = {}  # Store real passwords for later use
         self.table = DataTable(id="search-results")
-        self.table.add_columns("Service", "Score")
+        _, _, self.password_key, _ = self.table.add_columns("Service", "Username", "Password", "Score")
         self.table.cursor_type = "row"
 
         yield Vertical(
@@ -213,6 +214,7 @@ class Search(Screen):
         query = self.query_one("#search-input", Input).value.strip()
         if not query:
             self.query_one("#search-results", DataTable).clear()
+            self.real_passwords.clear()
             return
 
         # Perform search
@@ -222,5 +224,19 @@ class Search(Screen):
 
         # Update the search results table
         self.query_one("#search-results", DataTable).clear()
+        self.real_passwords.clear()
         for service, score, _ in results:
-            self.query_one("#search-results", DataTable).add_row(service, score)
+            username, password = get_credentials(self.app.fernet, service)
+            key = self.query_one("#search-results", DataTable).add_row(service, username, password, score)
+            self.real_passwords[key] = password
+
+    def on_data_table_row_highlighted(self, event) -> None:
+        # Mask all passwords
+        for row_key in self.real_passwords:
+            self.table.update_cell(row_key, self.password_key, "••••••")
+
+        # Reveal the highlighted password
+        highlighted_key = event.row_key
+        real_password = self.real_passwords.get(highlighted_key)
+        if real_password is not None:
+            self.table.update_cell(highlighted_key, self.password_key, real_password)
