@@ -6,3 +6,5 @@
 2. Add a config file that allows user to setup where data gets stored
 2. Add ability to enable/disable sessions (i.e. lock every time)
 2. Add a way to randomly generate passwords
+2. Combine salt and data into one file
+2. Add subarguments to help menu for each command
