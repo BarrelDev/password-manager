@@ -3,6 +3,7 @@ from textual.widgets import Button, Label, DataTable, Static, Input, Checkbox
 from textual.containers import Vertical, Horizontal
 from textual import log
 from rapidfuzz import process
+import pyperclip
 import string
 import secrets
 
@@ -36,6 +37,8 @@ class EntryList(Screen):
         elif event.key == "r":
             if self.table.cursor_row is not None:
                 self.prompt_replace(self.table.cursor_row)
+        elif event.key == "enter":
+            self.copy_selected_password()
         elif key == "d":
             # Vim-style 'dd' to delete
             if self._vim_delete_mode:
@@ -61,6 +64,21 @@ class EntryList(Screen):
         if self.df.empty:
             self.table.clear()
             self.table.add_row("No entries available yet.", "", "")
+
+    def copy_selected_password(self):
+        if self.table.cursor_row is not None and self.table.has_focus:
+            index = self.table.cursor_row
+            row_key, _ = self.table.coordinate_to_cell_key(self.table.cursor_coordinate)
+            password = self.real_passwords.get(row_key)
+
+            if password:
+                try:
+                    pyperclip.copy(password)
+                    self.app.set_focus(self.table)
+                    self.app.bell()  # Optional: feedback
+                    self.app.notify("📋 Password copied to clipboard.")
+                except Exception as e:
+                    self.app.notify(f"❌ Copy failed: {str(e)}", severity="error")
 
     def prompt_replace(self, index):
         service = self.df.iloc[index]["service"]
@@ -176,6 +194,7 @@ class EntryList(Screen):
         yield Vertical(
             header,
             self.table,
+            Label("↵ to copy | ⎋ to lock | / to search | a/i to add | r to replace | ctrl+q to close", id="footer"),
             id="list-container"
         )
 
@@ -342,7 +361,7 @@ class AddEntry(Screen):
                 add_service(self.app.fernet, service, username, password)
                 self.df = get_dataframe(self.app.fernet)  # Reload DataFrame
 
-                # Clear inputs and notify
+                # Clear inputs and Notify
                 for field_id in ["#service-input", "#username-input", "#password-input"]:
                     self.query_one(field_id, Input).value = ""
                 self.query_one("#message", Static).update("✅ Entry added.")
@@ -367,6 +386,23 @@ class Search(Screen):
         elif key == "G":  # Go to bottom
             if self.table.row_count > 0:
                 self.table.cursor_coordinate = (self.table.row_count - 1, 0)
+        elif event.key == "enter":
+            self.copy_selected_password()
+
+    def copy_selected_password(self):
+        if self.table.cursor_row is not None and self.table.has_focus:
+            index = self.table.cursor_row
+            row_key, _ = self.table.coordinate_to_cell_key(self.table.cursor_coordinate)
+            password = self.real_passwords.get(row_key)
+
+            if password:
+                try:
+                    pyperclip.copy(password)
+                    self.app.set_focus(self.table)
+                    self.app.bell()  # Optional: feedback
+                    self.app.notify("📋 Password copied to clipboard.")
+                except Exception as e:
+                    self.app.notify(f"❌ Copy failed: {str(e)}", severity="error")
 
     def compose(self):
         self.real_passwords = {}  # Store real passwords for later use
