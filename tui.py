@@ -1,5 +1,5 @@
 from screens.mainmenu import EntryList, AddEntry, Search
-from data import data_exists, get_fernet, get_key, is_valid, save_session_key, write_dataframe, create_empty_dataframe
+from data import data_exists, get_fernet, get_key, is_valid, save_session_key, write_dataframe, create_empty_dataframe, save_config, load_config
 
 from textual.app import App, ComposeResult
 from textual.widgets import Input, Label, Button, Static, Checkbox
@@ -21,6 +21,8 @@ class LoginApp(App):
                 Static("Please create a master password.", id="msg"),
                 Input(password=True, placeholder="Password", id="password"),
                 Input(password=True, placeholder="Confirm Password", id="confirm_password"),
+                Static("Data File Path", id="msg_path"),
+                Input(value=".dat/", placeholder="Data File Path", id="data_file_path"),
                 Checkbox("Remember me", id="remember_me", value=True),
                 Button("Create", id="create_button")
             )
@@ -90,6 +92,9 @@ class LoginApp(App):
                 if len(self.password) < 8:
                     self.message = "❗ Password must be at least 8 characters."
                 else:
+                    config = load_config()
+                    config["storage_dir"] = self.query_one("#data_file_path", Input).value
+                    save_config(config)
                     password = self.password.encode('utf-8')
                     save_session_key(get_key(password))
                     self.fernet = get_fernet(password)

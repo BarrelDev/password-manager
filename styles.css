@@ -3,7 +3,7 @@
   margin: 0 3;
 }
 
-#confirm_password, #password, #gen-display {
+#confirm_password, #password, #gen-display, #data_file_path {
   width: 50%;
   margin: 1;
 }
@@ -23,7 +23,7 @@
   align: right middle !important;
 }
 
-#msg {
+#msg, #msg_path {
   text-align: center;
   margin-top: 1;
 }

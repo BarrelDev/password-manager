@@ -53,25 +53,27 @@ def save_config(config: dict):
     with CONFIG_PATH.open("w", encoding="utf-8") as f:
         json.dump(config, f, indent=4)
 
-DATA_FOLDER = load_config()["storage_dir"] + "/"
-DATA_FOLDER = DATA_FOLDER.replace("\\", "/")  # Ensure forward slashes for compatibility
+def get_data_folder() -> str:
+    DATA_FOLDER = load_config()["storage_dir"] + "/"
+    DATA_FOLDER = DATA_FOLDER.replace("\\", "/")  # Ensure forward slashes for compatibility
+    return DATA_FOLDER
 
 ######################
 ## SECURITY METHODS ##
 ######################
 
 def write_binary_data(data, filename: str):
-    if os.path.isdir(DATA_FOLDER):
-        with open(DATA_FOLDER + filename, 'wb+') as file:
+    if os.path.isdir(get_data_folder()):
+        with open(get_data_folder() + filename, 'wb+') as file:
             file.write(data)
     else:
-        os.mkdir(DATA_FOLDER)
-        with open(DATA_FOLDER + filename, 'wb+') as file:
+        os.mkdir(get_data_folder())
+        with open(get_data_folder() + filename, 'wb+') as file:
             file.write(data)
 
 def read_binary_data(filename: str):
     try:
-        with open(DATA_FOLDER + filename, 'rb') as file:
+        with open(get_data_folder() + filename, 'rb') as file:
             dat = file.read()
             return dat
     except FileNotFoundError:
@@ -79,8 +81,8 @@ def read_binary_data(filename: str):
         return b''
 
 def get_salt():
-    if os.path.exists(DATA_FOLDER+DATA_FILE):
-        with open(DATA_FOLDER+DATA_FILE, "rb") as file:
+    if os.path.exists(get_data_folder()+DATA_FILE):
+        with open(get_data_folder()+DATA_FILE, "rb") as file:
             salt = file.read()[:SALT_SIZE]
             return salt
     else:
@@ -151,7 +153,7 @@ def prompt_for_password(prompt="Master password: ", timeout=60):
 
 
 def data_exists():
-    return os.path.exists(DATA_FOLDER + DATA_FILE)
+    return os.path.exists(get_data_folder() + DATA_FILE)
 
 def session_exists():
     return os.path.exists(SESSION_FILE)
