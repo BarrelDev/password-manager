@@ -1,8 +1,8 @@
-from screens.mainmenu import MainMenu
+from screens.mainmenu import EntryList
 from data import data_exists, get_fernet, get_key, is_valid, save_session_key, write_dataframe, create_empty_dataframe
 
 from textual.app import App, ComposeResult
-from textual.widgets import Input, Label, Button, Static
+from textual.widgets import Input, Label, Button, Static, Checkbox
 from textual.containers import Vertical
 from textual.reactive import reactive
 
@@ -21,17 +21,19 @@ class LoginApp(App):
                 Static("Please create a master password.", id="msg"),
                 Input(password=True, placeholder="Password", id="password"),
                 Input(password=True, placeholder="Confirm Password", id="confirm_password"),
+                Checkbox("Remember me", id="remember_me", value=True),
                 Button("Create", id="create_button")
             )
         elif not self.session_exists:
             yield Vertical(
                 Label("🔐 Welcome to Password Manager", id="title"),
                 Input(password=True, placeholder="Password", id="password"),
+                Checkbox("Remember me", id="remember_me", value=True),
                 Button("Login", id="login_button"),
                 Static(id="msg")
             )
         else:
-            yield MainMenu()    
+            yield EntryList()    
 
     def on_mount(self) -> None:
         if not data_exists():
@@ -40,7 +42,7 @@ class LoginApp(App):
             try:
                 self.fernet = get_fernet()
                 self.session_exists = True  # Save the session key
-                self.push_screen(MainMenu())
+                self.push_screen(EntryList())
             except ValueError:
                 self.session_exists = False
     
@@ -67,10 +69,11 @@ class LoginApp(App):
                 self.message = "❌ No data found. Please run `setup` to initialize the password manager."
             if (is_valid(get_fernet(password))):
                 self.fernet = get_fernet(password)
-                save_session_key(get_key(password))
-                self.session_exists = True
                 self.password = ""
-                self.push_screen(MainMenu())
+                if (remember_me := self.query_one("#remember_me", Checkbox)).value:
+                    save_session_key(get_key(password))
+                    self.session_exists = True
+                self.push_screen(EntryList())
             else:
                 self.message = "❌ Invalid password. Please try again."
         else:
@@ -89,7 +92,7 @@ class LoginApp(App):
                     self.fernet = get_fernet(password)
                     write_dataframe(self.fernet, create_empty_dataframe())  # Initialize empty DataFrame
                     self.session_exists = True
-                    self.push_screen(MainMenu())
+                    self.push_screen(EntryList())
             else:
                 self.message = "❗ Passwords do not match."
         else:

@@ -5,31 +5,10 @@ from rapidfuzz import process
 
 from data import lock_session, get_dataframe, add_service, get_services, remove_service, get_credentials
 
-class MainMenu(Screen):
-    def compose(self):
-        yield Vertical(
-            Label("📂 Main Menu", id="title"),
-            Button("📋 View All Entries", id="view"),
-            Button("➕ Add/❌ Remove Entry", id="add"),
-            Button("🔍 Search", id="search"),
-            Button("🔒 Lock", id="lock"),
-        )
-
-    def on_button_pressed(self, event):
-        if event.button.id == "view":
-            self.app.push_screen(EntryList())
-        elif event.button.id == "add":
-            self.app.push_screen(AddEntry())
-        elif event.button.id == "search":
-            self.app.push_screen(Search())
-        elif event.button.id == "lock":
-            lock_session()
-            self.app.pop_screen()  # go back to login
-
-
 class EntryList(Screen):
     def on_key(self, event):
         if event.key == "escape":
+            lock_session()
             self.app.pop_screen()
 
     def compose(self):
@@ -37,7 +16,9 @@ class EntryList(Screen):
 
         header = Horizontal(
             Label("🔍 Entry List", id="title"),
-            Button("Back to Main Menu", id="back"),
+            Button("➕ Add/❌ Remove Entry", id="add-entry"),
+            Button("🔍 Search", id="search-entries"),
+            Button("🔒", id="lock_button", tooltip="Lock"),
             id="header"
         )
 
@@ -76,8 +57,15 @@ class EntryList(Screen):
             self.table.update_cell(highlighted_key, self.password_key, real_password)
 
     def on_button_pressed(self, event):
-        if event.button.id == "back":
-            self.app.pop_screen()  # go back to main menu
+        match event.button.id:
+            case "add-entry":
+                self.app.push_screen(AddEntry())
+            case "search-entries":
+                self.app.push_screen(Search())
+            case "lock_button":
+                lock_session()
+                self.app.pop_screen()
+        
 
     def on_mount(self):
         # Load entries from data source and display them

@@ -13,6 +13,12 @@
   margin: 1;
 }
 
+#lock_button {
+  width: 5%;
+  margin-left: 4;
+  align: right middle !important;
+}
+
 #msg {
   text-align: center;
   margin-top: 1;
