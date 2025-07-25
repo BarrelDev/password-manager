@@ -310,8 +310,19 @@ class AddEntry(Screen):
 
 class Search(Screen):
     def on_key(self, event):
-        if event.key == "escape" or event.key == "q":
+        key = event.key
+        if key == "escape" or key == "q":
             self.app.pop_screen()
+
+        if key == "j":
+            self.table.action_cursor_down()
+        elif key == "k":
+            self.table.action_cursor_up()
+        elif key == "g":  # Go to top
+            self.table.cursor_coordinate = (0, 0)
+        elif key == "G":  # Go to bottom
+            if self.table.row_count > 0:
+                self.table.cursor_coordinate = (self.table.row_count - 1, 0)
 
     def compose(self):
         self.real_passwords = {}  # Store real passwords for later use
@@ -326,7 +337,6 @@ class Search(Screen):
                 id="header"),
             Horizontal(
                 Input(placeholder="Search by service name", id="search-input").focus(),
-                Button("Search", id="search"),
                 id="search-controls"
             ),
             self.table,
@@ -336,8 +346,6 @@ class Search(Screen):
     def on_button_pressed(self, event):
         if event.button.id == "back":
             self.app.pop_screen()  # go back to main menu
-        if event.button.id == "search":
-            self.submit_search()
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         if event.input.id == "search-input":
