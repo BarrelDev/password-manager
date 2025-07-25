@@ -1,9 +1,10 @@
 from textual.screen import Screen
-from textual.widgets import Button, Label, DataTable, Static, Input
+from textual.widgets import Button, Label, DataTable, Static, Input, Checkbox
 from textual.containers import Vertical, Horizontal
 from textual import log
 from rapidfuzz import process
-import time
+import string
+import secrets
 
 from data import lock_session, get_dataframe, add_service, get_services, remove_service, get_credentials
 
@@ -239,6 +240,7 @@ class AddEntry(Screen):
         self.query_one("#service-input", Input).focus()
 
     def compose(self):
+        self.generated_password = ""
         self.df = get_dataframe(self.app.fernet)
 
         # Input fields row
@@ -270,10 +272,51 @@ class AddEntry(Screen):
         yield Vertical(
             button_row,
             input_row,
+            Horizontal(
+                Input(value="16", id="pw-length", placeholder="Length"),
+                Checkbox("Uppercase", id="upper", value=True),
+                Checkbox("Lowercase", id="lower", value=True),
+                Checkbox("Digits", id="digits", value=True),
+                Checkbox("Symbols", id="symbols", value=True),
+                Button("Generate", id="generate"),
+                id="gen-controls"
+            ),
+            Input(placeholder="Generated password", id="gen-display", disabled=True),
             Static("", id="message"),
             id="main-layout"
         )
     
+    def generate_password(self):
+        length_input = self.query_one("#pw-length", Input).value
+        try:
+            length = int(length_input)
+        except ValueError:
+            self.query_one("#msg", Static).update("❌ Invalid length.")
+            return
+
+        use_upper = self.query_one("#upper", Checkbox).value
+        use_lower = self.query_one("#lower", Checkbox).value
+        use_digits = self.query_one("#digits", Checkbox).value
+        use_symbols = self.query_one("#symbols", Checkbox).value
+
+        charsets = ""
+        if use_upper:
+            charsets += string.ascii_uppercase
+        if use_lower:
+            charsets += string.ascii_lowercase
+        if use_digits:
+            charsets += string.digits
+        if use_symbols:
+            charsets += string.punctuation
+
+        if not charsets:
+            self.query_one("#msg", Static).update("❌ No character sets selected.")
+            return
+
+        self.generated_pw = ''.join(secrets.choice(charsets) for _ in range(length))
+        self.query_one("#gen-display", Input).value = self.generated_pw
+        self.query_one("#password-input", Input).value = self.generated_pw
+
     def on_data_table_row_highlighted(self, event) -> None:
         # Mask all passwords
         for row_key in self.real_passwords:
@@ -304,9 +347,10 @@ class AddEntry(Screen):
                     self.query_one(field_id, Input).value = ""
                 self.query_one("#message", Static).update("✅ Entry added.")
                 self.query_one("#service-input", Input).focus()
-
             case "back":
                 self.app.pop_screen()
+            case "generate":
+                self.generate_password()
 
 class Search(Screen):
     def on_key(self, event):

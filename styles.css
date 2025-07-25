@@ -3,7 +3,7 @@
   margin: 0 3;
 }
 
-#confirm_password, #password {
+#confirm_password, #password, #gen-display {
   width: 50%;
   margin: 1;
 }
@@ -11,6 +11,10 @@
 #login_button, #create_button {
   width: 20%;
   margin: 1;
+}
+
+#pw-length {
+  width: 10%;
 }
 
 #lock_button {
