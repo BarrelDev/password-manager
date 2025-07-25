@@ -9,6 +9,8 @@ from data import lock_session, get_dataframe, add_service, get_services, remove_
 
 class EntryList(Screen):
     def on_key(self, event):
+        if self.app.screen_stack[-1] != self:
+            return  # Don't respond if not top screen
         key = event.key
 
         # Escape to lock & exit
@@ -26,10 +28,13 @@ class EntryList(Screen):
         elif key == "G":  # Go to bottom
             if self.table.row_count > 0:
                 self.table.cursor_coordinate = (self.table.row_count - 1, 0)
-        elif key == "i":
+        elif key == "a" or key == "i":
             self.app.push_screen("add")
-        elif key == "/":
+        elif event.character == "/":
             self.app.push_screen("search")
+        elif event.key == "r":
+            if self.table.cursor_row is not None:
+                self.prompt_replace(self.table.cursor_row)
         elif key == "d":
             # Vim-style 'dd' to delete
             if self._vim_delete_mode:
@@ -50,8 +55,94 @@ class EntryList(Screen):
             self.df = self.df.drop(self.df.index[index]).reset_index(drop=True)
             remove_service(self.app.fernet, self.table.get_row_at(index)[0])
             row_key, _ = self.table.coordinate_to_cell_key(self.table.cursor_coordinate)
+            self.real_passwords.pop(row_key, None)  # Remove from real passwords
             self.table.remove_row(row_key)
-            self.real_passwords.pop(row_key, None)
+        if self.df.empty:
+            self.table.clear()
+            self.table.add_row("No entries available yet.", "", "")
+
+    def prompt_replace(self, index):
+        service = self.df.iloc[index]["service"]
+        current_username = self.df.iloc[index]["usrname"]
+
+        outer_self = self
+        
+        def after_input(self, input_type, new_value):
+            if not new_value:
+                return
+
+            if input_type == "username":
+                self.df.at[index, "usrname"] = new_value
+            elif input_type == "password":
+                self.df.at[index, "passwd"] = new_value
+
+            # Save back to encrypted storage
+            update_username = self.df.at[index, "usrname"]
+            update_password = self.df.at[index, "passwd"]
+            remove_service(self.app.fernet, service)  # Remove old entry
+            add_service(self.app.fernet, service, update_username, update_password)
+
+            self.refresh_table()
+
+        # Ask: username or password?
+        def prompt_field_choice(self):
+            from textual.widgets import OptionList
+            from textual.widgets.option_list import Option
+            from textual.screen import ModalScreen
+
+            outer_self = self
+
+            class FieldChoiceScreen(ModalScreen):
+                def compose(inner_self):
+                    inner_self.optionlist = OptionList(
+                        Option("Update Username", id="username"),
+                        Option("Update Password", id="password"),
+                        id="choice-list"
+                    )
+                    yield inner_self.optionlist
+
+                def on_mount(inner_self):
+                    inner_self.optionlist.focus()
+
+                def on_key(self, event):
+                    key = event.key
+
+                    # Escape to lock & exit
+                    if key == "escape" or key == "q":
+                        self.app.pop_screen()
+                        return
+
+                    if key == "j":
+                        self.optionlist.action_cursor_down()
+                    elif key == "k":
+                        self.optionlist.action_cursor_up()
+
+                def on_option_list_option_selected(inner_self, event):
+                    field = event.option.id
+                    self.app.pop_screen()
+                    prompt_new_value(outer_self, field)
+
+            self.app.push_screen(FieldChoiceScreen())
+
+        # Ask for new value
+        def prompt_new_value(self, input_type):
+            from textual.widgets import Input
+            from textual.screen import ModalScreen
+
+            class InputScreen(ModalScreen):
+                def compose(inner_self):
+                    placeholder = f"New {input_type.capitalize()}"
+                    yield Input(placeholder=placeholder, password=(input_type == "password"), id="new_input")
+
+                def on_input_submitted(inner_self, event):
+                    value = event.value.strip()
+                    self.app.pop_screen()
+                    after_input(self, input_type, value)
+
+            self.app.push_screen(InputScreen())
+
+        prompt_field_choice(outer_self)
+
 
     def compose(self):
         self.df = get_dataframe(self.app.fernet)
@@ -106,16 +197,7 @@ class EntryList(Screen):
             case "search-entries":
                 self.app.push_screen("search")
             case "remove-entry":
-                if self.table.cursor_row is not None and not self.df.empty:
-                    index = self.table.cursor_row
-                    self.df = self.df.drop(self.df.index[index]).reset_index(drop=True)
-                    remove_service(self.app.fernet, self.table.get_row_at(index)[0])
-                    row_key, _ = self.table.coordinate_to_cell_key(self.table.cursor_coordinate)
-                    self.real_passwords.pop(row_key, None)  # Remove from real passwords
-                    self.table.remove_row(row_key)
-                if self.df.empty:
-                    self.table.clear()
-                    self.table.add_row("No entries available yet.", "", "")
+                self._delete_current_row()
             case "lock_button":
                 lock_session()
                 self.app.pop_screen()
@@ -147,11 +229,15 @@ class EntryList(Screen):
 
 class AddEntry(Screen):
     def on_key(self, event):
-        if event.key == "escape":
+        if event.key == "escape" or event.key == "q":
             self.app.pop_screen()
-
-        
     
+    def on_mount(self):
+        self.query_one("#service-input", Input).focus()
+
+    def on_screen_resume(self):
+        self.query_one("#service-input", Input).focus()
+
     def compose(self):
         self.df = get_dataframe(self.app.fernet)
 
@@ -223,7 +309,7 @@ class AddEntry(Screen):
 
 class Search(Screen):
     def on_key(self, event):
-        if event.key == "escape":
+        if event.key == "escape" or event.key == "q":
             self.app.pop_screen()
 
     def compose(self):
