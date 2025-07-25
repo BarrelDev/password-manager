@@ -1,4 +1,4 @@
-from screens.mainmenu import EntryList
+from screens.mainmenu import EntryList, AddEntry, Search
 from data import data_exists, get_fernet, get_key, is_valid, save_session_key, write_dataframe, create_empty_dataframe
 
 from textual.app import App, ComposeResult
@@ -33,16 +33,19 @@ class LoginApp(App):
                 Static(id="msg")
             )
         else:
-            yield EntryList()    
+            self.push_screen("main")
 
     def on_mount(self) -> None:
+        self.install_screen(EntryList(), name="main")
+        self.install_screen(AddEntry(), name="add")
+        self.install_screen(Search(), name="search")
         if not data_exists():
             self.message = "❌ No data found. Please run `setup` to initialize the password manager."
         else:
             try:
                 self.fernet = get_fernet()
                 self.session_exists = True  # Save the session key
-                self.push_screen(EntryList())
+                self.push_screen("main")
             except ValueError:
                 self.session_exists = False
     
@@ -70,10 +73,10 @@ class LoginApp(App):
             if (is_valid(get_fernet(password))):
                 self.fernet = get_fernet(password)
                 self.password = ""
-                if (remember_me := self.query_one("#remember_me", Checkbox)).value:
+                if (self.query_one("#remember_me", Checkbox)).value:
                     save_session_key(get_key(password))
                     self.session_exists = True
-                self.push_screen(EntryList())
+                self.push_screen("main")
             else:
                 self.message = "❌ Invalid password. Please try again."
         else:
@@ -92,7 +95,7 @@ class LoginApp(App):
                     self.fernet = get_fernet(password)
                     write_dataframe(self.fernet, create_empty_dataframe())  # Initialize empty DataFrame
                     self.session_exists = True
-                    self.push_screen(EntryList())
+                    self.push_screen("main")
             else:
                 self.message = "❗ Passwords do not match."
         else:
@@ -102,4 +105,4 @@ class LoginApp(App):
 
 if __name__ == "__main__":
     app = LoginApp()
-    app.run()
+    app.debug()

@@ -1,7 +1,9 @@
 from textual.screen import Screen
 from textual.widgets import Button, Label, DataTable, Static, Input
 from textual.containers import Vertical, Horizontal
+from textual import log
 from rapidfuzz import process
+import time
 
 from data import lock_session, get_dataframe, add_service, get_services, remove_service, get_credentials
 
@@ -12,38 +14,37 @@ class EntryList(Screen):
             self.app.pop_screen()
 
     def compose(self):
-        df = get_dataframe(self.app.fernet)
+        self.df = get_dataframe(self.app.fernet)
 
         header = Horizontal(
             Label("🔍 Entry List", id="title"),
-            Button("➕ Add/❌ Remove Entry", id="add-entry"),
+            Button("➕ Add Entry", id="add-entry"),
+            Button("❌ Remove Selected", id="remove-entry"),
             Button("🔍 Search", id="search-entries"),
             Button("🔒", id="lock_button", tooltip="Lock"),
             id="header"
         )
 
         # This would be populated with actual entries
-        if not df.empty:
+        if not self.df.empty:
             self.table = DataTable(id="table")
             self.table.cursor_type = "row"
             _, _, self.password_key = self.table.add_columns("Service", "Username", "Password")
             masked = "••••••"
             self.real_passwords = {}  # Store real passwords for later use
-            for _, row in df.iterrows():
+            for _, row in self.df.iterrows():
                 key = self.table.add_row(row["service"], row["usrname"], masked)
                 self.real_passwords[key] = row["passwd"]
             self.table.focus()
-            yield Vertical(
-                header,
-                self.table,
-                id="list-container"
-            )
         else:
-            yield Vertical(
-                header,
-                Label("No entries available yet.", id="entries"),
-                id="list-container"
-            )
+            self.table = DataTable(id="table")
+            self.table.cursor_type = "row"
+            _, _, self.password_key = self.table.add_columns("Service", "Username", "Password")
+        yield Vertical(
+            header,
+            self.table,
+            id="list-container"
+        )
 
     def on_data_table_row_highlighted(self, event) -> None:
         # Mask all passwords
@@ -59,17 +60,49 @@ class EntryList(Screen):
     def on_button_pressed(self, event):
         match event.button.id:
             case "add-entry":
-                self.app.push_screen(AddEntry())
+                self.app.push_screen("add")
+                self.refresh_table()
             case "search-entries":
-                self.app.push_screen(Search())
+                self.app.push_screen("search")
+            case "remove-entry":
+                if self.table.cursor_row is not None and not self.df.empty:
+                    index = self.table.cursor_row
+                    self.df = self.df.drop(self.df.index[index]).reset_index(drop=True)
+                    remove_service(self.app.fernet, self.table.get_row_at(index)[0])
+                    row_key, _ = self.table.coordinate_to_cell_key(self.table.cursor_coordinate)
+                    self.real_passwords.pop(row_key, None)  # Remove from real passwords
+                    self.table.remove_row(row_key)
+                if self.df.empty:
+                    self.table.clear()
+                    self.table.add_row("No entries available yet.", "", "")
             case "lock_button":
                 lock_session()
                 self.app.pop_screen()
-        
+    
+    def on_screen_resume(self):
+        # Refresh the table with the latest data when returning to this screen
+        self.refresh_table()
 
     def on_mount(self):
-        # Load entries from data source and display them
-        pass  # Implement loading logic here
+        self.table = self.query_one("#table", DataTable)
+        self.refresh_table()
+
+    def refresh_table(self):
+        self.df = get_dataframe(self.app.fernet)
+
+        self.table.clear()
+        self.real_passwords = {}
+
+        if self.df.empty:
+            self.table.add_row("No entries available yet.", "", "")
+            return
+
+        masked = "••••••"
+        for _, row in self.df.iterrows():
+            key = self.table.add_row(row["service"], row["usrname"], masked)
+            self.real_passwords[key] = row["passwd"]
+        self.table.focus()
+
 
 class AddEntry(Screen):
     def on_key(self, event):
@@ -81,7 +114,7 @@ class AddEntry(Screen):
 
         # Input fields row
         input_row = Horizontal(
-            Input(placeholder="Service", id="service-input"),
+            Input(placeholder="Service", id="service-input").focus(),
             Input(placeholder="Username", id="username-input"),
             Input(placeholder="Password", password=True, id="password-input"),
             Button("Add Entry", id="add"),
@@ -100,16 +133,14 @@ class AddEntry(Screen):
 
         # Control buttons
         button_row = Horizontal(
-            Button("Remove Selected", id="remove"),
+            Label("➕ Add Entry", id="title"),
             Button("Back to Main Menu", id="back"),
             id="buttons"
         )
 
         yield Vertical(
-            Label("➕ Add / ❌ Remove Entries", id="title"),
-            input_row,
-            self.table,
             button_row,
+            input_row,
             Static("", id="message"),
             id="main-layout"
         )
@@ -138,26 +169,11 @@ class AddEntry(Screen):
                 # Add to DataFrame and table
                 add_service(self.app.fernet, service, username, password)
                 self.df = get_dataframe(self.app.fernet)  # Reload DataFrame
-                key = self.table.add_row(service, username, "••••••")
-                self.real_passwords[key] = password  # Store real password
-
 
                 # Clear inputs and notify
                 for field_id in ["#service-input", "#username-input", "#password-input"]:
                     self.query_one(field_id, Input).value = ""
                 self.query_one("#message", Static).update("✅ Entry added.")
-
-            case "remove":
-                if self.table.cursor_row is not None:
-                    index = self.table.cursor_row
-                    self.df = self.df.drop(self.df.index[index]).reset_index(drop=True)
-                    remove_service(self.app.fernet, self.table.get_row_at(index)[0])
-                    row_key, _ = self.table.coordinate_to_cell_key(self.table.cursor_coordinate)
-                    self.real_passwords.pop(row_key, None)  # Remove from real passwords
-                    self.table.remove_row(row_key)
-                    self.query_one("#message", Static).update("🗑️ Entry removed.")
-                else:
-                    self.query_one("#message", Static).update("⚠️ Select a row to remove.")
 
             case "back":
                 self.app.pop_screen()
@@ -170,7 +186,7 @@ class Search(Screen):
     def compose(self):
         self.real_passwords = {}  # Store real passwords for later use
         self.table = DataTable(id="search-results")
-        _, _, self.password_key, _ = self.table.add_columns("Service", "Username", "Password", "Score")
+        _, _, self.password_key = self.table.add_columns("Service", "Username", "Password")
         self.table.cursor_type = "row"
 
         yield Vertical(
@@ -213,9 +229,9 @@ class Search(Screen):
         # Update the search results table
         self.query_one("#search-results", DataTable).clear()
         self.real_passwords.clear()
-        for service, score, _ in results:
+        for service, _, _ in results:
             username, password = get_credentials(self.app.fernet, service)
-            key = self.query_one("#search-results", DataTable).add_row(service, username, password, score)
+            key = self.query_one("#search-results", DataTable).add_row(service, username, password)
             self.real_passwords[key] = password
 
     def on_data_table_row_highlighted(self, event) -> None:
