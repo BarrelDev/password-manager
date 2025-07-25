@@ -303,6 +303,7 @@ class AddEntry(Screen):
                 for field_id in ["#service-input", "#username-input", "#password-input"]:
                     self.query_one(field_id, Input).value = ""
                 self.query_one("#message", Static).update("✅ Entry added.")
+                self.query_one("#service-input", Input).focus()
 
             case "back":
                 self.app.pop_screen()
@@ -339,6 +340,10 @@ class Search(Screen):
             self.submit_search()
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.input.id == "search-input":
+            self.submit_search()
+
+    def on_input_changed(self, event: Input.Changed) -> None:
         if event.input.id == "search-input":
             self.submit_search()
 
