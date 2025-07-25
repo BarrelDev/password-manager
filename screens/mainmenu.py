@@ -9,12 +9,53 @@ from data import lock_session, get_dataframe, add_service, get_services, remove_
 
 class EntryList(Screen):
     def on_key(self, event):
-        if event.key == "escape":
+        key = event.key
+
+        # Escape to lock & exit
+        if key == "escape" or key == "q":
             lock_session()
             self.app.pop_screen()
+            return
+
+        if key == "j":
+            self.table.action_cursor_down()
+        elif key == "k":
+            self.table.action_cursor_up()
+        elif key == "g":  # Go to top
+            self.table.cursor_coordinate = (0, 0)
+        elif key == "G":  # Go to bottom
+            if self.table.row_count > 0:
+                self.table.cursor_coordinate = (self.table.row_count - 1, 0)
+        elif key == "i":
+            self.app.push_screen("add")
+        elif key == "/":
+            self.app.push_screen("search")
+        elif key == "d":
+            # Vim-style 'dd' to delete
+            if self._vim_delete_mode:
+                self._vim_delete_mode = False
+                self._delete_current_row()
+            else:
+                self._vim_delete_mode = True
+                self.set_timer(0.5, self._reset_vim_delete_mode)
+        else:
+            self._vim_delete_mode = False  # Reset on other keys
+
+    def _reset_vim_delete_mode(self):
+        self._vim_delete_mode = False
+
+    def _delete_current_row(self):
+        if self.table.cursor_row is not None and not self.df.empty:
+            index = self.table.cursor_row
+            self.df = self.df.drop(self.df.index[index]).reset_index(drop=True)
+            remove_service(self.app.fernet, self.table.get_row_at(index)[0])
+            row_key, _ = self.table.coordinate_to_cell_key(self.table.cursor_coordinate)
+            self.table.remove_row(row_key)
+            self.real_passwords.pop(row_key, None)
 
     def compose(self):
         self.df = get_dataframe(self.app.fernet)
+        self._vim_delete_mode = False  # Vim delete mode flag
 
         header = Horizontal(
             Label("🔍 Entry List", id="title"),
@@ -108,6 +149,8 @@ class AddEntry(Screen):
     def on_key(self, event):
         if event.key == "escape":
             self.app.pop_screen()
+
+        
     
     def compose(self):
         self.df = get_dataframe(self.app.fernet)
