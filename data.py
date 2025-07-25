@@ -4,17 +4,57 @@ import pandas as pd
 import base64
 import time
 import tempfile
+import json
+import sys
+from pathlib import Path
 from timeout import getpass_timeout
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-DATA_FOLDER = ".dat/"
+
 DATA_FILE = "data"
 SALT_SIZE = 16
 SESSION_FILE = tempfile.gettempdir() + "/session"
 SESSION_DURATION = 300
 FIELD_NAMES = ["service", "usrname", "passwd"]
+APP_NAME = "PasswordManager"
+
+####################
+## CONFIG METHODS ##
+####################
+
+def get_default_config_dir() -> Path:
+    if sys.platform == "win32":
+        return Path(os.getenv("APPDATA")) / APP_NAME
+    else:
+        return Path.home() / ".config" / APP_NAME
+    
+    
+CONFIG_DIR = get_default_config_dir()
+CONFIG_PATH = CONFIG_DIR / "config.json"
+
+DEFAULT_DATA_FOLDER = ".dat/"
+
+DEFAULT_CONFIG = {
+    "storage_dir": DEFAULT_DATA_FOLDER,  # Default storage location inside config dir
+}
+
+def load_config() -> dict:
+    if not CONFIG_PATH.exists():
+        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+        save_config(DEFAULT_CONFIG)
+        return DEFAULT_CONFIG
+    with CONFIG_PATH.open("r", encoding="utf-8") as f:
+        return json.load(f)
+
+def save_config(config: dict):
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    with CONFIG_PATH.open("w", encoding="utf-8") as f:
+        json.dump(config, f, indent=4)
+
+DATA_FOLDER = load_config()["storage_dir"] + "/"
+DATA_FOLDER = DATA_FOLDER.replace("\\", "/")  # Ensure forward slashes for compatibility
 
 ######################
 ## SECURITY METHODS ##

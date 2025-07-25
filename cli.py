@@ -35,6 +35,10 @@ def parse_args():
     # Help command
     subparsers.add_parser("help", help="Show this help message")
 
+    # Config command
+    config_parser = subparsers.add_parser("config", help="Manage configuration")
+    config_parser.add_argument("--set-dir", help="Set custom data storage directory")
+
     return parser.parse_args()
 
 def print_help():

@@ -17,9 +17,9 @@ def main():
     # Securely prompt for password (used as encryption key) 
 
     # Skip for setup and lock commands
-    requires_unlock = args.command not in {"setup", "lock"}
+    requires_unlock = args.command not in {"setup", "lock", "config", "help"}
 
-    if not data.data_exists() and args.command != "setup":
+    if not data.data_exists() and args.command != "setup" and args.command != "config":
         print("❌ No data found. Please run `setup` to initialize the password manager.")
         return
 
@@ -107,6 +107,13 @@ def main():
 
     elif args.command == "help":
         cli.print_help()
+
+    elif args.command == "config":
+        if args.set_dir:
+            config = data.load_config()
+            config["storage_dir"] = args.set_dir
+            data.save_config(config)
+            print(f"✅ Storage directory set to: {args.set_dir}")
 
 if __name__ == "__main__":
     main()
