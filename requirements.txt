@@ -4,3 +4,4 @@ rapidfuzz
 inputimeout
 Textual
 pyperclip
+pyinstaller

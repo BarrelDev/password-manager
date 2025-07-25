@@ -1,3 +1,8 @@
 .venv/
 .dat/
 __pycache__/
+dist
+build
+*.pyc
+*.pyo
+password-manager/
