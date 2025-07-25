@@ -1,6 +1,16 @@
 # password-manager
 A simple, local-first, password manager written in python. Offers both CLI and TUI uses. Supports Vim-style bindings in TUI mode. Licensed under GNU GPL v3
 
+# Table of Contents
+1. [Run/Build from source](#runbuild-from-source)
+    1. [Setup virtual environment](#setup-the-virtual-environment)
+    2. [Run](#run)
+    3. [Build](#build)
+2. [Terminal UI (TUI) Usage](#terminal-ui-tui-usage)
+3. [Command Line Interface (CLI) Usage](#command-line-interface-cli-usage)
+4. [Config File](#config-file)
+    1. [Format](#format)
+
 # Run/Build from source
 Run the following commands from the root directory of the repository to run the code from source.
 
