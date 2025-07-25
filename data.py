@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 DATA_FOLDER = ".dat/"
 DATA_FILE = "data"
-SALT_FILE = "salt"
+SALT_SIZE = 16
 SESSION_FILE = tempfile.gettempdir() + "/session"
 SESSION_DURATION = 300
 FIELD_NAMES = ["service", "usrname", "passwd"]
@@ -39,13 +39,13 @@ def read_binary_data(filename: str):
         return b''
 
 def get_salt():
-    if os.path.exists(DATA_FOLDER+SALT_FILE):
-        with open(DATA_FOLDER+SALT_FILE, "rb") as file:
-            salt = file.read()
+    if os.path.exists(DATA_FOLDER+DATA_FILE):
+        with open(DATA_FOLDER+DATA_FILE, "rb") as file:
+            salt = file.read()[:SALT_SIZE]
             return salt
     else:
-        salt = os.urandom(16)
-        write_binary_data(salt, SALT_FILE)
+        salt = os.urandom(SALT_SIZE)
+        write_binary_data(salt, DATA_FILE)
         return salt
 
 def get_key(password):
@@ -76,7 +76,7 @@ def get_fernet(password=None):
     return Fernet(key)
 
 def is_valid(fernet):
-    encrypted = read_binary_data(DATA_FILE)
+    encrypted = read_binary_data(DATA_FILE)[SALT_SIZE:]
     try:
         fernet.decrypt(encrypted)  # Test if key is valid
         return True
@@ -86,7 +86,7 @@ def is_valid(fernet):
 
 
 def prompt_for_password(prompt="Master password: ", timeout=60):
-    encrypted = read_binary_data(DATA_FILE)
+    encrypted = read_binary_data(DATA_FILE)[SALT_SIZE:]
 
     while True:
         try:
@@ -122,7 +122,8 @@ def session_exists():
 
 def get_dataframe(f):
     try:
-        read_dat = f.decrypt(read_binary_data(DATA_FILE)).decode('utf-8')
+        dat = read_binary_data(DATA_FILE)
+        read_dat = f.decrypt(dat[SALT_SIZE:]).decode('utf-8')
         input = io.StringIO(read_dat)
         df_read = pd.read_csv(input)
         return df_read
@@ -130,8 +131,7 @@ def get_dataframe(f):
         print("Incorrect password")
         pass
 
-    return None
-        
+    return None      
     
 
 def write_dataframe(f, df):
@@ -142,7 +142,7 @@ def write_dataframe(f, df):
 
     # Encrypt and save to file
     token = f.encrypt(csv_data.encode('utf-8'))
-    write_binary_data(token, DATA_FILE)
+    write_binary_data(get_salt() + token, DATA_FILE)
 
 def create_empty_dataframe():
     # Create an empty DataFrame with the required columns
@@ -150,9 +150,6 @@ def create_empty_dataframe():
 
 def add_service(fernet, service: str, usrname: str, passwd: str):
     df = get_dataframe(fernet)
-   
-    #Remove old credentials if service already exists.
-    df = df[df["service"] != service]
 
     row = [service, usrname, passwd]
     df = pd.concat([df, pd.DataFrame([row],
