@@ -4,7 +4,6 @@ Provides both a **Terminal UI (TUI)** and **Command-Line Interface (CLI)** with 
 
 Licensed under GNU GPL v3.
 
-
 ## Features
 
 - 🔐 AES-encrypted password storage (Fernet)
@@ -14,6 +13,9 @@ Licensed under GNU GPL v3.
 - 🧪 Full CLI interface for scripting
 - 🧩 Vim-style navigation: `j/k`, `g/G`, `/`, `dd`, `r`
 - 🎨 Theme extensibility with custom `styles.css`
+
+![Login Screen](assets/login.png)
+![Main Menu](assets/mainmenu.png)
 
 ## Table of Contents
 1. [Terminal UI (TUI) Usage](#terminal-ui-tui-usage)
