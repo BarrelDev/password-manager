@@ -3,6 +3,7 @@
 ####################
 
 import json
+import sys
 from pathlib import Path
 from platformdirs import user_config_dir
 
@@ -11,8 +12,16 @@ APP_NAME = "PasswordManager"
 CONFIG_DIR = Path(user_config_dir(APP_NAME))
 CONFIG_PATH = CONFIG_DIR / "config.json"
 
+def get_builtin_styles_path() -> Path:
+    if hasattr(sys, "_MEIPASS"):
+        # PyInstaller bundled path
+        return Path(sys._MEIPASS) / "styles.css"
+    else:
+        # Regular dev path
+        return Path(__file__).parent.parent / "tui" / "styles.css"
+
 CUSTOM_STYLES_PATH = CONFIG_DIR / "styles.css"
-BUILTIN_STYLES_PATH = Path(__file__).parent.parent / "tui" / "styles.css"
+BUILTIN_STYLES_PATH = get_builtin_styles_path()
 
 DEFAULT_DATA_FOLDER = ".dat/"
 
