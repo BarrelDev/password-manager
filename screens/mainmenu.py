@@ -3,7 +3,8 @@ from textual.widgets import Button, Label, DataTable
 from textual.containers import Vertical, Horizontal
 import pyperclip
 
-from core.data import lock_session, get_dataframe, add_service, remove_service
+from core.data import get_dataframe, add_service, remove_service
+from core.session import lock_session
 
 class EntryList(Screen):
     def on_key(self, event):

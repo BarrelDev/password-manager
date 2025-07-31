@@ -1,7 +1,11 @@
 from screens.mainmenu import EntryList
 from screens.search import Search
 from screens.addentry import AddEntry
-from core.data import data_exists, get_fernet, get_key, is_valid, save_session_key, write_dataframe, create_empty_dataframe, save_config, load_config
+
+from core.config import load_config, save_config
+from core.crypto import get_fernet, get_key, is_valid, data_exists
+from core.session import save_session_key
+from core.data import write_dataframe, create_empty_dataframe
 
 from textual.app import App, ComposeResult
 from textual.widgets import Input, Label, Button, Static, Checkbox

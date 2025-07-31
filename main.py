@@ -1,4 +1,7 @@
 import core.data as data
+from core.crypto import get_fernet, prompt_for_password, data_exists
+from core.session import lock_session, is_session_valid
+from core.config import load_config, save_config
 import cli
 import tui
 from rapidfuzz import process
@@ -19,12 +22,12 @@ def main():
     # Skip for setup and lock commands
     requires_unlock = args.command not in {"setup", "lock", "config", "help"}
 
-    if not data.data_exists() and args.command != "setup" and args.command != "config":
+    if not data_exists() and args.command != "setup" and args.command != "config":
         print("❌ No data found. Please run `setup` to initialize the password manager.")
         return
 
     if requires_unlock:
-        fernet = data.prompt_for_password()
+        fernet = prompt_for_password()
 
     if args.command == "add":
         try:
@@ -73,11 +76,11 @@ def main():
             print("❌ No close matches found.")
     
     elif args.command == "lock":
-        data.lock_session()
+        lock_session()
         print("🔒 Session locked. Password will be required next time.")
 
     elif args.command == "setup":
-        if data.session_exists() or data.data_exists():
+        if is_session_valid() or data_exists():
             confirm = input("⚠️ Password manager already initialized. Reinitialize? (y/N): ").strip().lower()
             if confirm != 'y':
                 print("❌ Setup cancelled.")
@@ -101,7 +104,7 @@ def main():
         # Initialize encrypted vault and key
         password = pw1.encode("utf-8")
         # Ensure fernet is created with the new password
-        fernet = data.get_fernet(password)
+        fernet = get_fernet(password)
         data.write_dataframe(fernet, data.create_empty_dataframe())
         print("✅ Vault setup complete. You can now add credentials using `add`.")
 
@@ -110,9 +113,9 @@ def main():
 
     elif args.command == "config":
         if args.set_dir:
-            config = data.load_config()
+            config = load_config()
             config["storage_dir"] = args.set_dir
-            data.save_config(config)
+            save_config(config)
             print(f"✅ Storage directory set to: {args.set_dir}")
 
 if __name__ == "__main__":

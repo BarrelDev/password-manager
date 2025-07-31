@@ -6,9 +6,12 @@ from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-from core.data import get_data_folder, read_binary_data, write_binary_data
-from core.data import DATA_FILE, SALT_SIZE
-from core.session import save_session_key, load_session_key, SESSION_FILE
+from core.binary import read_binary_data, write_binary_data
+from core.config import get_data_folder
+from core.session import is_session_valid, save_session_key, load_session_key
+
+SALT_SIZE = 16
+DATA_FILE = "data"
 
 def get_salt():
     path = os.path.join(get_data_folder(), DATA_FILE)
@@ -57,11 +60,26 @@ def is_valid(fernet):
     except InvalidToken:
         return False
 
+def get_data_file(fernet: Fernet) -> bytes | None:
+    try:
+        dat = read_binary_data(DATA_FILE)
+        read_dat = fernet.decrypt(dat[SALT_SIZE:]).decode('utf-8')
+        return read_dat
+    except InvalidToken:
+        print("Invalid password")
+        return None
+    except FileNotFoundError:
+        print(f"No such file {DATA_FILE} exists")
+        return None
+    
+def write_data_file(fernet: Fernet, data: str):
+    token = fernet.encrypt(data.encode('utf-8'))
+    write_binary_data(get_salt() + token, DATA_FILE)
 
 def prompt_for_password(prompt="Master password: "):
     encrypted = read_binary_data(DATA_FILE)[SALT_SIZE:]
 
-    if session_exists():
+    if is_session_valid():
         try:
             return get_fernet()
         except Exception:
@@ -84,6 +102,3 @@ def prompt_for_password(prompt="Master password: "):
 def data_exists():
     path = os.path.join(get_data_folder(), DATA_FILE)
     return os.path.exists(path)
-
-def session_exists():
-    return os.path.exists(SESSION_FILE)

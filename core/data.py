@@ -1,55 +1,23 @@
-import os
-import io
-import pandas as pd
-from cryptography.fernet import InvalidToken
-
-from core.config import get_data_folder
-from core.crypto import get_salt
-
-DATA_FILE = "data"
-SALT_SIZE = 16
-FIELD_NAMES = ["service", "usrname", "passwd"]
-
-
-########################
-## READ/WRITE METHODS ##
-########################
-
-def write_binary_data(data, filename: str):
-    path = os.path.join(get_data_folder(), filename)
-    os.makedirs(get_data_folder(), exist_ok=True)
-    with open(path, 'wb+') as file:
-        file.write(data)
-
-def read_binary_data(filename: str):
-    try:
-        path = os.path.join(get_data_folder(), filename)
-        with open(path, 'rb') as file:
-            dat = file.read()
-            return dat
-    except FileNotFoundError:
-        print ('No such file %s exists' % filename)
-        return None
-
 #######################
 ## DATAFRAME METHODS ##
 #######################
 
+import io
+import pandas as pd
+
+from core.crypto import get_data_file, write_data_file
+
+FIELD_NAMES = ["service", "usrname", "passwd"]
+
 def get_dataframe(f):
-    try:
-        dat = read_binary_data(DATA_FILE)
-        read_dat = f.decrypt(dat[SALT_SIZE:]).decode('utf-8')
-        input = io.StringIO(read_dat)
-        df_read = pd.read_csv(input)
-        return df_read
-    except InvalidToken:
-        print("Incorrect password")
-        pass
-    except FileNotFoundError:
-        print(f"No such file {DATA_FILE} exists")
+    read_dat = get_data_file(f)
+
+    if read_dat is None:
         return create_empty_dataframe()
 
-    return create_empty_dataframe()      
+    input = io.StringIO(read_dat)
+    df_read = pd.read_csv(input)
+    return df_read  
 
 def write_dataframe(f, df):
     # Save to CSV in-memory using pandas
@@ -58,8 +26,7 @@ def write_dataframe(f, df):
     csv_data = output.getvalue()
 
     # Encrypt and save to file
-    token = f.encrypt(csv_data.encode('utf-8'))
-    write_binary_data(get_salt() + token, DATA_FILE)
+    write_data_file(f, csv_data)
 
 def create_empty_dataframe():
     # Create an empty DataFrame with the required columns
