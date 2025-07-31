@@ -1,7 +1,6 @@
 cryptography
 pandas
 rapidfuzz
-inputimeout
 Textual
 pyperclip
 pyinstaller

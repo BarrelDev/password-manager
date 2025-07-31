@@ -7,7 +7,7 @@ import tempfile
 import json
 import sys
 from pathlib import Path
-from timeout import getpass_timeout
+from getpass import getpass
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -127,7 +127,7 @@ def is_valid(fernet):
     return False
 
 
-def prompt_for_password(prompt="Master password: ", timeout=60):
+def prompt_for_password(prompt="Master password: "):
     encrypted = read_binary_data(DATA_FILE)[SALT_SIZE:]
 
     while True:
@@ -138,7 +138,7 @@ def prompt_for_password(prompt="Master password: ", timeout=60):
         except ValueError:
             # print("Session key not found or invalid. Please enter the master password.")
             try:
-                password = getpass_timeout(prompt, timeout=timeout).encode("utf-8")
+                password = getpass(prompt).encode("utf-8")
                 # print("Attempting to create Fernet instance with provided password.")
                 fernet = get_fernet(password)
                 if is_valid(fernet):
@@ -146,8 +146,6 @@ def prompt_for_password(prompt="Master password: ", timeout=60):
                     return fernet
                 else:
                     print("❌ Invalid password. Please try again.")
-            except TimeoutError as e:
-                print(f"\n{e}")
             except Exception as e:
                 print(f"\n❌ Unexpected error during password entry: {e}")
 

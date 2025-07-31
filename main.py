@@ -1,8 +1,8 @@
 import data
-import timeout
 import cli
 import tui
 from rapidfuzz import process
+from getpass import getpass
 
 def main():
     # Parse command line arguments
@@ -24,13 +24,13 @@ def main():
         return
 
     if requires_unlock:
-        fernet = data.prompt_for_password(timeout=60)
+        fernet = data.prompt_for_password()
 
     if args.command == "add":
         try:
-            user_password = timeout.getpass_timeout(prompt=f"Password for {args.service}: ", timeout=60)
-        except TimeoutError as e:
-            print(f"\n{e}")
+            user_password = getpass(prompt=f"Password for {args.service}: ")
+        except Exception as e:
+            print(f"❌ Error reading password: {e}")
             return
         data.add_service(fernet, args.service, args.username, user_password)
         print(f"✅ Added/Updated credentials for '{args.service}'.")
@@ -86,15 +86,15 @@ def main():
         # Prompt for new master password
         try:
             while True:
-                pw1 = timeout.getpass_timeout("🧪 Create master password: ", timeout=120)
-                pw2 = timeout.getpass_timeout("🔁 Confirm master password: ", timeout=120)
+                pw1 = getpass("🧪 Create master password: ")
+                pw2 = getpass("🔁 Confirm master password: ")
                 if pw1 != pw2:
                     print("❗ Passwords do not match. Try again.")
                 elif len(pw1) < 8:
                     print("❗ Password must be at least 8 characters.")
                 else:
                     break
-        except TimeoutError as e:
+        except Exception as e:
             print(f"\n{e}")
             return
 
