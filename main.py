@@ -3,7 +3,7 @@ from core.crypto import get_fernet, prompt_for_password, data_exists
 from core.session import lock_session, is_session_valid
 from core.config import load_config, save_config
 import cli
-import tui
+from tui import LoginApp
 
 from rapidfuzz import process
 from getpass import getpass
@@ -14,7 +14,7 @@ def main():
     
     # If no command is provided, run the TUI app
     if args.command is None:
-        tui_app = tui.LoginApp()
+        tui_app = LoginApp()
         tui_app.run()
         return
 

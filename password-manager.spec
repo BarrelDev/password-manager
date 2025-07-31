@@ -5,7 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('styles.css', '.')],
+    datas=[('tui/styles.css', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
