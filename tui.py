@@ -2,7 +2,7 @@ from screens.mainmenu import EntryList
 from screens.search import Search
 from screens.addentry import AddEntry
 
-from core.config import load_config, save_config
+from core.config import load_config, save_config, DEFAULT_DATA_FOLDER
 from core.crypto import get_fernet, get_key, is_valid, data_exists
 from core.session import save_session_key
 from core.data import write_dataframe, create_empty_dataframe
@@ -28,7 +28,7 @@ class LoginApp(App):
                 Input(password=True, placeholder="Password", id="password"),
                 Input(password=True, placeholder="Confirm Password", id="confirm_password"),
                 Static("Data File Path", id="msg_path"),
-                Input(value=".dat/", placeholder="Data File Path", id="data_file_path"),
+                Input(value=DEFAULT_DATA_FOLDER, placeholder="Data File Path", id="data_file_path"),
                 Checkbox("Remember me", id="remember_me", value=True),
                 Button("Create", id="create_button")
             )

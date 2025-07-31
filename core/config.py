@@ -30,7 +30,9 @@ def save_config(config: dict):
     with CONFIG_PATH.open("w", encoding="utf-8") as f:
         json.dump(config, f, indent=4)
 
-def get_data_folder() -> str:
-    DATA_FOLDER = load_config()["storage_dir"] + "/"
-    DATA_FOLDER = DATA_FOLDER.replace("\\", "/")  # Ensure forward slashes for compatibility
-    return DATA_FOLDER
+def get_data_folder() -> Path:
+    config = load_config()
+    folder = config.get("storage_dir", DEFAULT_DATA_FOLDER)
+    full_path = (CONFIG_DIR / folder).resolve()
+    full_path.mkdir(parents=True, exist_ok=True)
+    return full_path

@@ -2,6 +2,7 @@ import os
 import base64
 
 from getpass import getpass
+from pathlib import Path
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -14,8 +15,8 @@ SALT_SIZE = 16
 DATA_FILE = "data"
 
 def get_salt():
-    path = os.path.join(get_data_folder(), DATA_FILE)
-    if os.path.exists(path):
+    path = get_data_folder() / DATA_FILE
+    if path.exists():
         return read_binary_data(DATA_FILE)[:SALT_SIZE]
     else:
         salt = os.urandom(SALT_SIZE)
@@ -100,5 +101,5 @@ def prompt_for_password(prompt="Master password: "):
 
 
 def data_exists():
-    path = os.path.join(get_data_folder(), DATA_FILE)
-    return os.path.exists(path)
+    path = get_data_folder() / DATA_FILE
+    return path.exists()

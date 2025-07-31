@@ -1,9 +1,10 @@
-import core.data as data
+from core.data import get_credentials, get_services, add_service, remove_service, write_dataframe, create_empty_dataframe
 from core.crypto import get_fernet, prompt_for_password, data_exists
 from core.session import lock_session, is_session_valid
 from core.config import load_config, save_config
 import cli
 import tui
+
 from rapidfuzz import process
 from getpass import getpass
 
@@ -35,15 +36,15 @@ def main():
         except Exception as e:
             print(f"❌ Error reading password: {e}")
             return
-        data.add_service(fernet, args.service, args.username, user_password)
+        add_service(fernet, args.service, args.username, user_password)
         print(f"✅ Added/Updated credentials for '{args.service}'.")
 
     elif args.command == "remove":
-        data.remove_service(fernet, args.service)
+        remove_service(fernet, args.service)
         print(f"✅ Removed credentials for '{args.service}'.")
 
     elif args.command == "get":
-        username, passwd = data.get_credentials(fernet, args.service)
+        username, passwd = get_credentials(fernet, args.service)
         if username is not None:
             print(f"🔑 Service: {args.service}")
             print(f"👤 Username: {username}")
@@ -52,7 +53,7 @@ def main():
             print(f"❌ No credentials found for '{args.service}'.")
 
     elif args.command == "list":
-        services = data.get_services(fernet)
+        services = get_services(fernet)
         if services:
             print("📋 Stored services:")
             for service in services:
@@ -61,7 +62,7 @@ def main():
             print("⚠️ No services stored yet.")
 
     elif args.command == "search":
-        services = data.get_services(fernet)
+        services = get_services(fernet)
         if not services:
             print("⚠️ No services stored yet.")
             return
@@ -105,7 +106,7 @@ def main():
         password = pw1.encode("utf-8")
         # Ensure fernet is created with the new password
         fernet = get_fernet(password)
-        data.write_dataframe(fernet, data.create_empty_dataframe())
+        write_dataframe(fernet, create_empty_dataframe())
         print("✅ Vault setup complete. You can now add credentials using `add`.")
 
     elif args.command == "help":
