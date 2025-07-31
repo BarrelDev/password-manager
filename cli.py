@@ -1,5 +1,4 @@
 import argparse
-import sys
 
 parser = argparse.ArgumentParser(description="🔐 Simple Encrypted Password Manager")
 
