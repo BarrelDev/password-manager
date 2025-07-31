@@ -1,6 +1,6 @@
 from tui.screens import EntryList, Search, AddEntry
 
-from core.config import load_config, save_config, DEFAULT_DATA_FOLDER
+from core.config import load_config, save_config, DEFAULT_DATA_FOLDER, get_styles_paths
 from core.crypto import get_fernet, get_key, is_valid, data_exists
 from core.session import save_session_key
 from core.data import write_dataframe, create_empty_dataframe
@@ -11,7 +11,7 @@ from textual.containers import Vertical
 from textual.reactive import reactive
 
 class LoginApp(App):
-    CSS_PATH = "styles.css"
+    CSS_PATH = get_styles_paths()
 
     # Widget IDs
     TITLE_ID = "title"

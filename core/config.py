@@ -11,6 +11,9 @@ APP_NAME = "PasswordManager"
 CONFIG_DIR = Path(user_config_dir(APP_NAME))
 CONFIG_PATH = CONFIG_DIR / "config.json"
 
+CUSTOM_STYLES_PATH = CONFIG_DIR / "styles.css"
+BUILTIN_STYLES_PATH = Path(__file__).parent.parent / "tui" / "styles.css"
+
 DEFAULT_DATA_FOLDER = ".dat/"
 
 DEFAULT_CONFIG = {
@@ -36,3 +39,9 @@ def get_data_folder() -> Path:
     full_path = (CONFIG_DIR / folder).resolve()
     full_path.mkdir(parents=True, exist_ok=True)
     return full_path
+
+def get_styles_paths() -> list[Path]:
+    paths = [BUILTIN_STYLES_PATH]
+    if CUSTOM_STYLES_PATH.exists():
+        paths.append(CUSTOM_STYLES_PATH)
+    return paths
