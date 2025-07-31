@@ -1,6 +1,4 @@
-from screens.mainmenu import EntryList
-from screens.search import Search
-from screens.addentry import AddEntry
+from screens import EntryList, Search, AddEntry
 
 from core.config import load_config, save_config, DEFAULT_DATA_FOLDER
 from core.crypto import get_fernet, get_key, is_valid, data_exists
