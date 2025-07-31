@@ -4,7 +4,7 @@ from textual.containers import Vertical, Horizontal
 import string
 import secrets
 
-from data import get_dataframe, add_service
+from core.data import get_dataframe, add_service
 
 class AddEntry(Screen):
     def on_key(self, event):

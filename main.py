@@ -1,4 +1,4 @@
-import data
+import core.data as data
 import cli
 import tui
 from rapidfuzz import process

@@ -5,7 +5,7 @@ from textual.containers import Vertical, Horizontal
 from rapidfuzz import process
 import pyperclip
 
-from data import get_services, get_credentials
+from core.data import get_services, get_credentials
 
 class Search(Screen):
     def on_key(self, event):
